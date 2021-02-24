@@ -6,11 +6,9 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type ImportID = uuid.UUID
-type ImportOptions struct{}
 
 type Job struct {
 	id        uuid.UUID `db:"id"`
