@@ -67,8 +67,8 @@ func (d *dao) NewImport(dirs []string) (importID ImportID, err error) {
 // GetImportStatus retrieves the status for an import.
 func (d *dao) GetImportStatus(importID ImportID) (status Status, err error) {
 	q, args, err := sq.
-		Select("imports").
-		Columns("status").
+		Select("status").
+		From("imports").
 		Where("id = ?", importID).
 		ToSql()
 
@@ -113,8 +113,9 @@ func (d *dao) PushJob(importID ImportID, kind JobKind) error {
 // PeekJob retrieves a job from the queue, but does not delete it.
 func (d *dao) PeekJob(importID ImportID) (job Job, err error) {
 	q, args, err := sq.
-		Select("jobs").
-		Columns("*").
+		Select("*").
+		From("jobs").
+		Limit(1).
 		ToSql()
 
 	if err != nil {

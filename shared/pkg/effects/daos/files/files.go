@@ -45,8 +45,8 @@ func NewDao(conn *sqlx.DB) *dao {
 // Files lists all files.
 func (d *dao) Files() (files []File, err error) {
 	q, args, err := sq.
-		Select("files").
-		Columns("*").
+		Select("*").
+		From("files").
 		ToSql()
 
 	if err != nil {
