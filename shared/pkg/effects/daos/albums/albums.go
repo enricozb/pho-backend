@@ -21,6 +21,9 @@ type Dao interface {
 
 	// GetAlbumFiles gets all files for an album.
 	GetAlbumFiles(albumID AlbumID) ([]files.File, error)
+
+	// GetNestedAlbums gets all immediate album children for an album.
+	GetNestedAlbums(albumID AlbumID) ([]AlbumID, error)
 }
 
 type dao struct {
@@ -85,4 +88,19 @@ func (d *dao) GetAlbumFiles(albumID AlbumID) (fileIDs []files.File, err error) {
 	}
 
 	return fileIDs, d.db.Select(&fileIDs, q, args...)
+}
+
+// GetNestedAlbums gets all immediate album children for an album.
+func (d *dao) GetNestedAlbums(albumID AlbumID) (albumIDs []AlbumID, err error) {
+	q, args, err := sq.
+		Select("child_album_id").
+		From("album_albums").
+		Where("album_id = ?", albumID).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("build query: %v", err)
+	}
+
+	return albumIDs, d.db.Select(&albumIDs, q, args...)
 }
