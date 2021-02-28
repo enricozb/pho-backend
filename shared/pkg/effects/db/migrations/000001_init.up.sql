@@ -66,11 +66,12 @@ CREATE TABLE path_metadata (
 );
 
 CREATE TABLE files (
-  file_id   UUID     PRIMARY KEY,
+  id        UUID     PRIMARY KEY,
   import_id UUID     NOT NULL REFERENCES imports(id),
   kind      TEXT     NOT NULL REFERENCES file_kinds(kind),
   timestamp DATETIME NOT NULL,
   init_hash BLOB     NOT NULL UNIQUE,
+  conv_hash BLOB     UNIQUE,
   live_id   BLOB
 );
 
