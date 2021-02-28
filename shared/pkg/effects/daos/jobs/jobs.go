@@ -36,6 +36,9 @@ type Dao interface {
 	// SetImportStatus sets the status for an existing import.
 	SetImportStatus(importID ImportID, status Status) error
 
+	// AllJobs returns all jobs for an import ID.
+	AllJobs(importID ImportID) ([]Job, error)
+
 	// PushJob adds a new job to the queue.
 	PushJob(importID ImportID, kind JobKind) (JobID, error)
 
@@ -107,6 +110,20 @@ func (d *dao) SetImportStatus(importID ImportID, status Status) error {
 
 	_, err = d.db.Exec(q, args...)
 	return err
+}
+
+// AllJobs returns all jobs for an import ID.
+func (d *dao) AllJobs(importID ImportID) (jobs []Job, err error) {
+	q, args, err := sq.
+		Select("*").
+		From("jobs").
+		ToSql()
+
+	if err != nil {
+		return []Job{}, fmt.Errorf("build query: %v", err)
+	}
+
+	return jobs, d.db.Select(&jobs, q, args...)
 }
 
 // PushJob adds a new job to the queue.
