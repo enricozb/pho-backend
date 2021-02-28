@@ -26,7 +26,7 @@ type PathMetadata struct {
 	Kind      files.FileKind `db:"kind"`
 	Timestamp time.Time      `db:"timestamp"`
 	InitHash  []byte         `db:"init_hash"`
-	Live      uuid.UUID      `db:"live_id"`
+	LiveID    []byte         `db:"live_id"`
 }
 
 var _ Dao = &dao{}
@@ -114,8 +114,8 @@ func (d *dao) SetTimestamp(pathID PathID, timestamp time.Time) error {
 }
 
 // SetInitHash sets the initial hash for a path.
-func (d *dao) SetInitHash(pathID PathID, hash []byte) error {
-	return d.setMetadata(pathID, "hash", hash)
+func (d *dao) SetInitHash(pathID PathID, initHash []byte) error {
+	return d.setMetadata(pathID, "init_hash", initHash)
 }
 
 // SetLiveID sets the iOS "live" photo id for a path.
@@ -125,9 +125,10 @@ func (d *dao) SetLiveID(pathID PathID, liveID []byte) error {
 
 func (d *dao) setMetadata(pathID PathID, metadataColumn string, value interface{}) error {
 	q, args, err := squirrel.
-		Update("paths").
-		Set(metadataColumn, value).
-		Where("id = ?", pathID).
+		Insert("path_metadata").
+		Columns("path_id", metadataColumn).
+		Values(pathID, value).
+		Suffix(fmt.Sprintf("ON CONFLICT(path_id) DO UPDATE SET %s = ?", metadataColumn), value).
 		ToSql()
 
 	if err != nil {
