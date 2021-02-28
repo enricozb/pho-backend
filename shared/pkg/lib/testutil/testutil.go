@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 
+	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/db"
 
 	"github.com/jmoiron/sqlx"
@@ -25,6 +26,13 @@ func MockDB(t *testing.T) (mockDB *sqlx.DB, cleanup func()) {
 	assert.NoError(db.Migrate(mockDB), "migrate mock db")
 
 	return mockDB, func() { os.RemoveAll(tmpdir) }
+}
+
+func MockImport(t *testing.T, db *sqlx.DB) jobs.ImportID {
+	importID, err := jobs.NewDao(db).NewImport(jobs.ImportOptions{})
+	assert.NoError(t, err, "new import")
+
+	return importID
 }
 
 func NumRows(t *testing.T, db *sqlx.DB, tableName string) (count int) {
