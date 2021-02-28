@@ -1,7 +1,9 @@
 package jobs
 
 import (
+	"encoding/json"
 	"fmt"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -9,18 +11,24 @@ import (
 )
 
 type ImportID = uuid.UUID
+type JobID = uuid.UUID
 
 type Job struct {
-	id        uuid.UUID `db:"id"`
-	import_id ImportID  `db:"import_id"`
-	kind      JobKind   `db:"kind"`
+	ID        uuid.UUID `db:"id"`
+	ImportID  ImportID  `db:"import_id"`
+	Kind      JobKind   `db:"kind"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
+type ImportOptions struct {
+	Paths []string `json:"paths"`
 }
 
 var _ Dao = &dao{}
 
 type Dao interface {
 	// NewImport starts a new import.
-	NewImport(dirs []string) (ImportID, error)
+	NewImport(opts ImportOptions) (ImportID, error)
 
 	// GetImportStatus retrieves the status for an import.
 	GetImportStatus(importID ImportID) (Status, error)
@@ -29,7 +37,7 @@ type Dao interface {
 	SetImportStatus(importID ImportID, status Status) error
 
 	// PushJob adds a new job to the queue.
-	PushJob(importID ImportID, kind JobKind) error
+	PushJob(importID ImportID, kind JobKind) (JobID, error)
 
 	// PeekJob retrieves a job from the queue, but does not delete it.
 	PeekJob(importID ImportID) (Job, error)
@@ -49,19 +57,26 @@ func NewDao(conn *sqlx.DB) *dao {
 	return &dao{conn}
 }
 
-func (d *dao) NewImport(dirs []string) (importID ImportID, err error) {
+func (d *dao) NewImport(opts ImportOptions) (importID ImportID, err error) {
+	optsBytes, err := json.Marshal(opts)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("json marshal: %v", err)
+	}
+
+	importID = uuid.New()
+
 	q, args, err := sq.
 		Insert("imports").
-		Columns("dirs").
-		Values(dirs).
-		Suffix("RETURNING id").
+		Columns("id", "opts").
+		Values(importID, optsBytes).
 		ToSql()
 
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("build query: %v", err)
 	}
 
-	return importID, d.db.Get(&importID, q, args...)
+	_, err = d.db.Exec(q, args...)
+	return importID, err
 }
 
 // GetImportStatus retrieves the status for an import.
@@ -95,19 +110,21 @@ func (d *dao) SetImportStatus(importID ImportID, status Status) error {
 }
 
 // PushJob adds a new job to the queue.
-func (d *dao) PushJob(importID ImportID, kind JobKind) error {
+func (d *dao) PushJob(importID ImportID, kind JobKind) (jobID JobID, err error) {
+	jobID = uuid.New()
+
 	q, args, err := sq.
 		Insert("jobs").
-		Columns("import_id", "kind").
-		Values(importID, kind).
+		Columns("id", "import_id", "kind").
+		Values(jobID, importID, kind).
 		ToSql()
 
 	if err != nil {
-		return fmt.Errorf("build query: %v", err)
+		return uuid.Nil, fmt.Errorf("build query: %v", err)
 	}
 
 	_, err = d.db.Exec(q, args...)
-	return err
+	return jobID, err
 }
 
 // PeekJob retrieves a job from the queue, but does not delete it.
@@ -132,7 +149,7 @@ func (d *dao) PopJob(importID ImportID) (Job, error) {
 		return Job{}, fmt.Errorf("pop job: %w", err)
 	}
 
-	return job, d.DeleteJob(job.id)
+	return job, d.DeleteJob(job.ID)
 }
 
 // DeleteJob deletes a job from the queue.

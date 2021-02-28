@@ -3,7 +3,12 @@ package jobs
 type Status string
 
 const (
-	StatusScan    Status = "SCANNING"
-	StatusConvert Status = "CONVERTING"
-	StatusMove    Status = "MOVING"
+	StatusNotStarted Status = "NOT_STARTED"
+	StatusScan       Status = "SCAN"
+	StatusMetadata   Status = "METADATA"
+	StatusDedupe     Status = "DEDUPE"
+	StatusConvert    Status = "CONVERT"
+	StatusCleanup    Status = "CLEANUP"
+	StatusDone       Status = "DONE"
+	StatusFailed     Status = "FAILED"
 )
