@@ -1,19 +1,17 @@
-BEGIN;
-
-# ─────────────────────────────── job scheduler ───────────────────────────────
-CREATE TABLE import_statuses(status) AS
-  VALUES
+/* ───────────────────────────── job scheduler ───────────────────────────── */
+CREATE TABLE import_statuses(status TEXT NOT NULL);
+INSERT INTO import_statuses(status) VALUES
     ('NOT_STARTED'),
     ('SCAN'),
     ('METADATA'),
     ('DEDUPE'),
     ('CONVERT'),
-    ('CLEANUP');
+    ('CLEANUP'),
     ('DONE'),
     ('FAILED');
 
-CREATE TABLE job_kinds(kind) AS
-  VALUES
+CREATE TABLE job_kinds(kind TEXT NOT NULL);
+INSERT INTO job_kinds(kind) VALUES
     ('SCAN'),
     ('METADATA'),
     ('METADATA_HASH'),
@@ -32,8 +30,12 @@ CREATE TABLE imports (
   opts       TEXT     NOT NULL,
   status     TEXT     NOT NULL REFERENCES import_statuses(status),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TRIGGER import_updated_at AFTER UPDATE ON imports BEGIN
+  UPDATE imports SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
 CREATE TABLE jobs (
   id         UUID     PRIMARY KEY,
@@ -43,9 +45,9 @@ CREATE TABLE jobs (
 );
 
 
-# ─────────────────────────────── files & paths ───────────────────────────────
-CREATE TABLE file_kinds(kind) AS
-  VALUES
+/* ───────────────────────────── files & paths ──────────────────────────────*/
+CREATE TABLE file_kinds(kind TEXT NOT NULL);
+INSERT INTO file_kinds(kind) VALUES
     ('VIDEO'),
     ('IMAGE');
 
@@ -56,39 +58,37 @@ CREATE TABLE paths (
 );
 
 CREATE TABLE path_metadata (
-  path_id   UUID     PRIMARY KEY REFERENCES paths(id),
+  path_id   UUID     REFERENCES paths(id) PRIMARY KEY,
   path      TEXT     NOT NULL,
   kind      TEXT     NOT NULL REFERENCES file_kinds(kind),
   timestamp DATETIME,
   init_hash BLOB,
-  live_id   BLOB,
+  live_id   BLOB
 );
 
 CREATE TABLE files (
-  file_id   UUID     PRIMARY KEY
+  file_id   UUID     PRIMARY KEY,
   import_id UUID     NOT NULL REFERENCES imports(id),
   kind      TEXT     NOT NULL REFERENCES file_kinds(kind),
   timestamp DATETIME NOT NULL,
   init_hash BLOB     NOT NULL UNIQUE,
-  live_id   BLOB,
+  live_id   BLOB
 );
 
 
-# ────────────────────────────────── albums ───────────────────────────────────
+/* ──────────────────────────────── albums ───────────────────────────────── */
 CREATE TABLE albums (
   id   UUID PRIMARY KEY,
   name TEXT NOT NULL
 );
 
 CREATE TABLE album_albums (
-  album_id       UUID PRIMARY KEY REFERENCES albums(id),
-  child_album_id UUID REFERENCES albums(id),
+  album_id       UUID REFERENCES albums(id) PRIMARY KEY,
+  child_album_id UUID REFERENCES albums(id)
 );
 
 CREATE TABLE album_files (
-  album_id     UUID PRIMARY KEY REFERENCES albums(id),
-  file_id      UUID PRIMARY KEY REFERENCES files(id),
-  is_highlight BOOL NOT NULL DEFAULT FALSE,
+  album_id     UUID REFERENCES albums(id) PRIMARY KEY,
+  file_id      UUID REFERENCES files(id),
+  is_highlight BOOL NOT NULL DEFAULT FALSE
 );
-
-COMMIT;
