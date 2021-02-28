@@ -36,19 +36,20 @@ func NewDao(conn *sqlx.DB) *dao {
 
 // NewAlbum creates a new album under the provided parentID, if any.
 func (d *dao) NewAlbum(name string, parentID AlbumID) (albumID AlbumID, err error) {
+	albumID = uuid.New()
+
 	// insert album and get new AlbumID
 	q, args, err := sq.
 		Insert("albums").
-		Columns("name").
-		Values(name).
-		Suffix("RETURNING id").
+		Columns("id", "name").
+		Values(albumID, name).
 		ToSql()
 
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("build insert album query: %v", err)
 	}
 
-	if err := d.db.Get(&albumID, q, args...); err != nil {
+	if _, err := d.db.Exec(q, args...); err != nil {
 		return uuid.Nil, fmt.Errorf("insert album: %w", err)
 	}
 
