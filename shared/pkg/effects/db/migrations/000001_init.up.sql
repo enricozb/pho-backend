@@ -59,8 +59,7 @@ CREATE TABLE paths (
 
 CREATE TABLE path_metadata (
   path_id   UUID     REFERENCES paths(id) PRIMARY KEY,
-  path      TEXT     NOT NULL,
-  kind      TEXT     NOT NULL REFERENCES file_kinds(kind),
+  kind      TEXT     REFERENCES file_kinds(kind),
   timestamp DATETIME,
   init_hash BLOB,
   live_id   BLOB
