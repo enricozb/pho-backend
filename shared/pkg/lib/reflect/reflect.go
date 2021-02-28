@@ -19,7 +19,7 @@ func Tags(i interface{}, key string) []string {
 		return tags
 	}
 
-	var tags []string
+	tags := []string{}
 	for i := 0; i < t.NumField(); i++ {
 		if tag, ok := t.Field(i).Tag.Lookup(key); ok {
 			tags = append(tags, tag)
@@ -40,7 +40,7 @@ func Fields(i interface{}, key string) map[string]string {
 		return fields
 	}
 
-	var fields map[string]string
+	fields := map[string]string{}
 	for i := 0; i < t.NumField(); i++ {
 		if tag, ok := t.Field(i).Tag.Lookup(key); ok {
 			fields[tag] = t.Field(i).Name
