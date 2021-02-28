@@ -28,7 +28,7 @@ INSERT INTO job_kinds(kind) VALUES
 CREATE TABLE imports (
   id         UUID     PRIMARY KEY,
   opts       TEXT     NOT NULL,
-  status     TEXT     NOT NULL REFERENCES import_statuses(status),
+  status     TEXT     NOT NULL REFERENCES import_statuses(status) DEFAULT 'NOT_STARTED',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
