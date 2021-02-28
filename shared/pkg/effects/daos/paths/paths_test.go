@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
@@ -16,8 +16,8 @@ import (
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 )
 
-func setup(t *testing.T) (*assert.Assertions, *sqlx.DB, paths.Dao, func()) {
-	assert := assert.New(t)
+func setup(t *testing.T) (*require.Assertions, *sqlx.DB, paths.Dao, func()) {
+	assert := require.New(t)
 	db, cleanup := testutil.MockDB(t)
 	dao := paths.NewDao(db)
 
@@ -82,7 +82,7 @@ func seedRandomPaths(t *testing.T, dao paths.Dao, importID jobs.ImportID, numPat
 	}
 
 	pathIDs, err := dao.AddPaths(importID, pathStrings)
-	assert.NoError(t, err, "add paths")
+	require.NoError(t, err, "add paths")
 
 	for i, pathID := range pathIDs {
 		pathStructs[i].ID = pathID

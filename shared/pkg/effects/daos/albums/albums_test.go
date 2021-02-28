@@ -5,14 +5,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/albums"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 )
 
-func setup(t *testing.T) (*assert.Assertions, *sqlx.DB, albums.Dao, func()) {
-	assert := assert.New(t)
+func setup(t *testing.T) (*require.Assertions, *sqlx.DB, albums.Dao, func()) {
+	assert := require.New(t)
 	db, cleanup := testutil.MockDB(t)
 	dao := albums.NewDao(db)
 
