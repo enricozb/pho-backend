@@ -75,8 +75,9 @@ func TestJobs_PushPeekPopJob(t *testing.T) {
 	assert.Equal(importID, job.ImportID)
 	assert.Equal(jobs.JobScan, job.Kind)
 
-	job, err = dao.PopJob(importID)
+	job, ok, err := dao.PopJob(importID)
 	assert.NoError(err, "pop job")
+	assert.True(ok, "pop job ok")
 
 	// should change due to a pop
 	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
@@ -84,6 +85,28 @@ func TestJobs_PushPeekPopJob(t *testing.T) {
 	assert.Equal(jobID, job.ID)
 	assert.Equal(importID, job.ImportID)
 	assert.Equal(jobs.JobScan, job.Kind)
+}
+
+func TestJobs_NumJobs(t *testing.T) {
+	assert, db, dao, cleanup := setup(t)
+	defer cleanup()
+
+	importID, err := dao.NewImport(jobs.ImportOptions{})
+	assert.NoError(err, "new import")
+
+	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
+
+	// insert some jobs...
+	numJobs := 10
+	jobIDs := make([]jobs.JobID, numJobs)
+	for i := range jobIDs {
+		jobIDs[i], err = dao.PushJob(importID, jobs.JobScan)
+		assert.NoError(err, "push job")
+	}
+
+	actualNumJobs, err := dao.NumJobs(importID)
+	assert.NoError(err, "num jobs")
+	assert.Equal(numJobs, actualNumJobs, "num jobs")
 }
 
 func TestJobs_DeleteJob(t *testing.T) {

@@ -3,6 +3,7 @@ package jobs
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -39,25 +40,29 @@ type Dao interface {
 	// AllJobs returns all jobs for an import ID.
 	AllJobs(importID ImportID) ([]Job, error)
 
+	// NumJobs returns the number of jobs for an import ID.
+	NumJobs(importID ImportID) (int, error)
+
 	// PushJob adds a new job to the queue.
 	PushJob(importID ImportID, kind JobKind) (JobID, error)
 
 	// PeekJob retrieves a job from the queue, but does not delete it.
 	PeekJob(importID ImportID) (Job, error)
 
-	// PopJob retrieves a job from the queue, and deletes it.
-	PopJob(importID ImportID) (Job, error)
+	// PopJob retrieves a job from the queue, and deletes it. If no job is available, the boolean return argument is false, and err is nil.
+	PopJob(importID ImportID) (Job, bool, error)
 
 	// DeleteJob deletes a job from the queue.
 	DeleteJob(jobID uuid.UUID) error
 }
 
 type dao struct {
-	db *sqlx.DB
+	db       *sqlx.DB
+	popMutex sync.Mutex
 }
 
 func NewDao(conn *sqlx.DB) *dao {
-	return &dao{conn}
+	return &dao{db: conn}
 }
 
 func (d *dao) NewImport(opts ImportOptions) (importID ImportID, err error) {
@@ -126,6 +131,20 @@ func (d *dao) AllJobs(importID ImportID) (jobs []Job, err error) {
 	return jobs, d.db.Select(&jobs, q, args...)
 }
 
+// NumJobs returns the number of jobs for an import ID.
+func (d *dao) NumJobs(importID ImportID) (numJobs int, err error) {
+	q, args, err := sq.
+		Select("count(*)").
+		From("jobs").
+		ToSql()
+
+	if err != nil {
+		return 0, fmt.Errorf("build query: %v", err)
+	}
+
+	return numJobs, d.db.Get(&numJobs, q, args...)
+}
+
 // PushJob adds a new job to the queue.
 func (d *dao) PushJob(importID ImportID, kind JobKind) (jobID JobID, err error) {
 	jobID = uuid.New()
@@ -159,14 +178,29 @@ func (d *dao) PeekJob(importID ImportID) (job Job, err error) {
 	return job, d.db.Get(&job, q, args...)
 }
 
-// PopJob retrieves a job from the queue, and deletes it.
-func (d *dao) PopJob(importID ImportID) (Job, error) {
-	job, err := d.PeekJob(importID)
-	if err != nil {
-		return Job{}, fmt.Errorf("pop job: %w", err)
+// PopJob retrieves a job from the queue, and deletes it. If no job is available, the boolean return argument is false, and err is nil.
+// TODO(enricozb): it takes three database queries to do this when it could take one.
+func (d *dao) PopJob(importID ImportID) (Job, bool, error) {
+	d.popMutex.Lock()
+
+	if numJobs, err := d.NumJobs(importID); err != nil {
+		return Job{}, false, fmt.Errorf("num jobs: %w", err)
+	} else if numJobs == 0 {
+		return Job{}, false, nil
 	}
 
-	return job, d.DeleteJob(job.ID)
+	job, err := d.PeekJob(importID)
+	if err != nil {
+		return Job{}, false, fmt.Errorf("peek job: %w", err)
+	}
+
+	if err := d.DeleteJob(job.ID); err != nil {
+		return Job{}, false, fmt.Errorf("delete job: %w", err)
+	}
+
+	d.popMutex.Unlock()
+
+	return job, true, nil
 }
 
 // DeleteJob deletes a job from the queue.
