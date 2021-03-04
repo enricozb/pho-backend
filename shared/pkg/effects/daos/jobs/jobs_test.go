@@ -1,6 +1,7 @@
 package jobs_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -24,9 +25,7 @@ func TestJobs_NewImport(t *testing.T) {
 
 	assert.Equal(0, testutil.NumRows(t, db, "imports"))
 
-	importID, err := dao.NewImport(jobs.ImportOptions{})
-	assert.NoError(err, "new import")
-
+	importID := testutil.MockImport(t, db)
 	assert.Equal(1, testutil.NumRows(t, db, "imports"))
 
 	status, err := dao.GetImportStatus(importID)
@@ -36,13 +35,11 @@ func TestJobs_NewImport(t *testing.T) {
 }
 
 func TestJobs_SetImportStatus(t *testing.T) {
-	assert, _, dao, cleanup := setup(t)
+	assert, db, dao, cleanup := setup(t)
 	defer cleanup()
 
-	importID, err := dao.NewImport(jobs.ImportOptions{})
-	assert.NoError(err, "new import")
-
-	err = dao.SetImportStatus(importID, jobs.StatusDedupe)
+	importID := testutil.MockImport(t, db)
+	err := dao.SetImportStatus(importID, jobs.StatusDedupe)
 	assert.NoError(err, "set import status")
 
 	status, err := dao.GetImportStatus(importID)
@@ -55,9 +52,7 @@ func TestJobs_PushPeekPopJob(t *testing.T) {
 	assert, db, dao, cleanup := setup(t)
 	defer cleanup()
 
-	importID, err := dao.NewImport(jobs.ImportOptions{})
-	assert.NoError(err, "new import")
-
+	importID := testutil.MockImport(t, db)
 	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
 
 	jobID, err := dao.PushJob(importID, jobs.JobScan)
@@ -65,7 +60,7 @@ func TestJobs_PushPeekPopJob(t *testing.T) {
 
 	assert.Equal(1, testutil.NumRows(t, db, "jobs"))
 
-	job, err := dao.PeekJob(importID)
+	job, err := dao.PeekJob()
 	assert.NoError(err, "peek job")
 
 	// should not change due to a peek
@@ -75,7 +70,7 @@ func TestJobs_PushPeekPopJob(t *testing.T) {
 	assert.Equal(importID, job.ImportID)
 	assert.Equal(jobs.JobScan, job.Kind)
 
-	job, ok, err := dao.PopJob(importID)
+	job, ok, err := dao.PopJob()
 	assert.NoError(err, "pop job")
 	assert.True(ok, "pop job ok")
 
@@ -91,20 +86,19 @@ func TestJobs_NumJobs(t *testing.T) {
 	assert, db, dao, cleanup := setup(t)
 	defer cleanup()
 
-	importID, err := dao.NewImport(jobs.ImportOptions{})
-	assert.NoError(err, "new import")
-
+	importID := testutil.MockImport(t, db)
 	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
 
 	// insert some jobs...
 	numJobs := 10
 	jobIDs := make([]jobs.JobID, numJobs)
 	for i := range jobIDs {
+		var err error
 		jobIDs[i], err = dao.PushJob(importID, jobs.JobScan)
 		assert.NoError(err, "push job")
 	}
 
-	actualNumJobs, err := dao.NumJobs(importID)
+	actualNumJobs, err := dao.NumJobs()
 	assert.NoError(err, "num jobs")
 	assert.Equal(numJobs, actualNumJobs, "num jobs")
 }
@@ -113,15 +107,14 @@ func TestJobs_DeleteJob(t *testing.T) {
 	assert, db, dao, cleanup := setup(t)
 	defer cleanup()
 
-	importID, err := dao.NewImport(jobs.ImportOptions{})
-	assert.NoError(err, "new import")
-
+	importID := testutil.MockImport(t, db)
 	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
 
 	// insert some jobs...
 	numJobs := 10
 	jobIDs := make([]jobs.JobID, numJobs)
 	for i := range jobIDs {
+		var err error
 		jobIDs[i], err = dao.PushJob(importID, jobs.JobScan)
 		assert.NoError(err, "push job")
 	}
@@ -132,7 +125,7 @@ func TestJobs_DeleteJob(t *testing.T) {
 		assert.NoError(dao.DeleteJob(jobID), "delete job")
 		numJobs -= 1
 
-		allJobs, err := dao.AllJobs(importID)
+		allJobs, err := dao.AllJobs()
 		assert.NoError(err, "all jobs")
 
 		assert.Equal(numJobs, len(allJobs))
@@ -142,4 +135,24 @@ func TestJobs_DeleteJob(t *testing.T) {
 			assert.NotEqual(jobID, job.ID)
 		}
 	}
+}
+
+func TestJobs_ImportFailures(t *testing.T) {
+	assert, db, dao, cleanup := setup(t)
+	defer cleanup()
+
+	errors := []error{errors.New("error1"), errors.New("error2"), errors.New("error3")}
+	expectedMessages := []string{}
+
+	importID := testutil.MockImport(t, db)
+
+	for _, err := range errors {
+		assert.NoError(dao.RecordImportFailure(importID, err))
+		expectedMessages = append(expectedMessages, err.Error())
+	}
+
+	actualMessages, err := dao.GetImportFailureMessages(importID)
+	assert.NoError(err, "get import failure messages")
+
+	assert.ElementsMatch(expectedMessages, actualMessages)
 }

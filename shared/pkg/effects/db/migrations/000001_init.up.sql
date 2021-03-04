@@ -37,6 +37,11 @@ CREATE TRIGGER import_updated_at AFTER UPDATE ON imports BEGIN
   UPDATE imports SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
+CREATE TABLE import_failures (
+  import_id  UUID,
+  message    TEXT
+);
+
 CREATE TABLE jobs (
   id         UUID     PRIMARY KEY,
   import_id  UUID     NOT NULL REFERENCES imports(id),

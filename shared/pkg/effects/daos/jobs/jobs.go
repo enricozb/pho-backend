@@ -37,23 +37,29 @@ type Dao interface {
 	// SetImportStatus sets the status for an existing import.
 	SetImportStatus(importID ImportID, status Status) error
 
-	// AllJobs returns all jobs for an import ID.
-	AllJobs(importID ImportID) ([]Job, error)
+	// RecordImportFailure sets an import's status to FAILED and records the error message.
+	RecordImportFailure(importID ImportID, msg error) error
 
-	// NumJobs returns the number of jobs for an import ID.
-	NumJobs(importID ImportID) (int, error)
+	// GetImportFailureMessages gets an import's failure messages.
+	GetImportFailureMessages(importID ImportID) ([]string, error)
+
+	// AllJobs returns all jobs.
+	AllJobs() ([]Job, error)
+
+	// NumJobs returns the number of jobs.
+	NumJobs() (int, error)
 
 	// PushJob adds a new job to the queue.
 	PushJob(importID ImportID, kind JobKind) (JobID, error)
 
 	// PeekJob retrieves a job from the queue, but does not delete it.
-	PeekJob(importID ImportID) (Job, error)
+	PeekJob() (Job, error)
 
 	// PopJob retrieves a job from the queue, and deletes it. If no job is available, the boolean return argument is false, and err is nil.
-	PopJob(importID ImportID) (Job, bool, error)
+	PopJob() (Job, bool, error)
 
 	// DeleteJob deletes a job from the queue.
-	DeleteJob(jobID uuid.UUID) error
+	DeleteJob(jobID JobID) error
 }
 
 type dao struct {
@@ -107,6 +113,7 @@ func (d *dao) SetImportStatus(importID ImportID, status Status) error {
 	q, args, err := sq.
 		Update("imports").
 		Set("status", status).
+		Where("id = ?", importID).
 		ToSql()
 
 	if err != nil {
@@ -117,22 +124,53 @@ func (d *dao) SetImportStatus(importID ImportID, status Status) error {
 	return err
 }
 
-// AllJobs returns all jobs for an import ID.
-func (d *dao) AllJobs(importID ImportID) (jobs []Job, err error) {
+// RecordImportFailure sets an import's status to FAILED and records the error message.
+func (d *dao) RecordImportFailure(importID ImportID, msg error) error {
+	if err := d.SetImportStatus(importID, StatusFailed); err != nil {
+		return fmt.Errorf("set import status: %v", err)
+	}
+
+	q, args, err := sq.
+		Insert("import_failures").
+		Columns("import_id", "message").
+		Values(importID, msg.Error()).
+		ToSql()
+
+	_, err = d.db.Exec(q, args...)
+	return err
+}
+
+// GetImportFailureMessages gets an import's failure messages.
+func (d *dao) GetImportFailureMessages(importID ImportID) (messages []string, err error) {
+	q, args, err := sq.
+		Select("message").
+		From("import_failures").
+		Where("import_id = ?", importID).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("build query: %v", err)
+	}
+
+	return messages, d.db.Select(&messages, q, args...)
+}
+
+// AllJobs returns all jobs.
+func (d *dao) AllJobs() (jobs []Job, err error) {
 	q, args, err := sq.
 		Select("*").
 		From("jobs").
 		ToSql()
 
 	if err != nil {
-		return []Job{}, fmt.Errorf("build query: %v", err)
+		return nil, fmt.Errorf("build query: %v", err)
 	}
 
 	return jobs, d.db.Select(&jobs, q, args...)
 }
 
-// NumJobs returns the number of jobs for an import ID.
-func (d *dao) NumJobs(importID ImportID) (numJobs int, err error) {
+// NumJobs returns the number of jobs.
+func (d *dao) NumJobs() (numJobs int, err error) {
 	q, args, err := sq.
 		Select("count(*)").
 		From("jobs").
@@ -164,7 +202,7 @@ func (d *dao) PushJob(importID ImportID, kind JobKind) (jobID JobID, err error) 
 }
 
 // PeekJob retrieves a job from the queue, but does not delete it.
-func (d *dao) PeekJob(importID ImportID) (job Job, err error) {
+func (d *dao) PeekJob() (job Job, err error) {
 	q, args, err := sq.
 		Select("*").
 		From("jobs").
@@ -179,17 +217,18 @@ func (d *dao) PeekJob(importID ImportID) (job Job, err error) {
 }
 
 // PopJob retrieves a job from the queue, and deletes it. If no job is available, the boolean return argument is false, and err is nil.
-// TODO(enricozb): it takes three database queries to do this when it could take one.
-func (d *dao) PopJob(importID ImportID) (Job, bool, error) {
+// TODO(enricozb): it takes three database queries to do this when it might be possible to do in one.
+func (d *dao) PopJob() (Job, bool, error) {
 	d.popMutex.Lock()
+	defer d.popMutex.Unlock()
 
-	if numJobs, err := d.NumJobs(importID); err != nil {
+	if numJobs, err := d.NumJobs(); err != nil {
 		return Job{}, false, fmt.Errorf("num jobs: %w", err)
 	} else if numJobs == 0 {
 		return Job{}, false, nil
 	}
 
-	job, err := d.PeekJob(importID)
+	job, err := d.PeekJob()
 	if err != nil {
 		return Job{}, false, fmt.Errorf("peek job: %w", err)
 	}
@@ -198,13 +237,11 @@ func (d *dao) PopJob(importID ImportID) (Job, bool, error) {
 		return Job{}, false, fmt.Errorf("delete job: %w", err)
 	}
 
-	d.popMutex.Unlock()
-
 	return job, true, nil
 }
 
 // DeleteJob deletes a job from the queue.
-func (d *dao) DeleteJob(jobID uuid.UUID) error {
+func (d *dao) DeleteJob(jobID JobID) error {
 	q, args, err := sq.
 		Delete("jobs").
 		Where("id = ?", jobID).
