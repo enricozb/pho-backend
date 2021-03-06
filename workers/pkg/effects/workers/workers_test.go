@@ -19,11 +19,25 @@ func setup(t *testing.T) (*require.Assertions, *sqlx.DB, daos.Dao, func()) {
 	return assert, db, dao, cleanup
 }
 
-func assertDidSetImportStatus(t *testing.T, dao jobs.Dao, importID jobs.ImportID, expectedStatus jobs.Status) {
-	assert := require.New(t)
-
+func assertDidSetImportStatus(assert *require.Assertions, dao jobs.Dao, importID jobs.ImportID, expectedStatus jobs.Status) {
 	actualStatus, err := dao.GetImportStatus(importID)
 	assert.NoError(err, "get import status")
 
 	assert.Equal(expectedStatus, actualStatus)
+}
+
+func assertDidEnqueueJob(assert *require.Assertions, dao jobs.Dao, importID jobs.ImportID, expectedKind jobs.JobKind) {
+	jobs, err := dao.AllJobs()
+	assert.NoError(err, "all jobs")
+
+	found := false
+
+	for _, job := range jobs {
+		if job.ImportID == importID && job.Kind == expectedKind {
+			found = true
+			break
+		}
+	}
+
+	assert.True(found, "found matching job kind")
 }

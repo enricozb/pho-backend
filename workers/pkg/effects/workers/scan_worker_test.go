@@ -31,5 +31,6 @@ func TestJobs_ScanWorker(t *testing.T) {
 
 	assert.Len(paths, 3)
 
-	assertDidSetImportStatus(t, dao, importID, jobs.StatusScan)
+	assertDidSetImportStatus(assert, dao, importID, jobs.StatusScan)
+	assertDidEnqueueJob(assert, dao, importID, jobs.JobMetadata)
 }

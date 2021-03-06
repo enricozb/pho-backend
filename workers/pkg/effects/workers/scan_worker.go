@@ -46,6 +46,10 @@ func (w *scanWorker) Work(jobID jobs.JobID) error {
 		return fmt.Errorf("add paths: %v", err)
 	}
 
+	if _, err := w.dao.PushJob(importID, jobs.JobMetadata); err != nil {
+		return fmt.Errorf("push job: %v", err)
+	}
+
 	return nil
 }
 
