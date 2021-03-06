@@ -1,14 +1,22 @@
 package jobs
 
-type Status string
+type ImportStatus string
+type JobStatus string
 
 const (
-	StatusNotStarted Status = "NOT_STARTED"
-	StatusScan       Status = "SCAN"
-	StatusMetadata   Status = "METADATA"
-	StatusDedupe     Status = "DEDUPE"
-	StatusConvert    Status = "CONVERT"
-	StatusCleanup    Status = "CLEANUP"
-	StatusDone       Status = "DONE"
-	StatusFailed     Status = "FAILED"
+	ImportStatusNotStarted ImportStatus = "NOT_STARTED"
+	ImportStatusScan       ImportStatus = "SCAN"
+	ImportStatusMetadata   ImportStatus = "METADATA"
+	ImportStatusDedupe     ImportStatus = "DEDUPE"
+	ImportStatusConvert    ImportStatus = "CONVERT"
+	ImportStatusCleanup    ImportStatus = "CLEANUP"
+	ImportStatusDone       ImportStatus = "DONE"
+	ImportStatusFailed     ImportStatus = "FAILED"
+)
+
+const (
+	JobStatusNotStarted JobStatus = "NOT_STARTED"
+	JobStatusStarted    JobStatus = "STARTED"
+	JobStatusDone       JobStatus = "DONE"
+	JobStatusFailed     JobStatus = "FAILED"
 )

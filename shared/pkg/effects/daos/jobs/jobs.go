@@ -17,6 +17,7 @@ type JobID = uuid.UUID
 type Job struct {
 	ID        uuid.UUID `db:"id"`
 	ImportID  ImportID  `db:"import_id"`
+	Status    JobStatus `db:"status"`
 	Kind      JobKind   `db:"kind"`
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -35,10 +36,10 @@ type Dao interface {
 	GetImportOptions(importID ImportID) (ImportOptions, error)
 
 	// GetImportStatus retrieves the status for an import.
-	GetImportStatus(importID ImportID) (Status, error)
+	GetImportStatus(importID ImportID) (ImportStatus, error)
 
 	// SetImportStatus sets the status for an existing import.
-	SetImportStatus(importID ImportID, status Status) error
+	SetImportStatus(importID ImportID, status ImportStatus) error
 
 	// RecordImportFailure sets an import's status to FAILED and records the error message.
 	RecordImportFailure(importID ImportID, msg error) error
@@ -120,7 +121,7 @@ func (d *dao) GetImportOptions(importID ImportID) (opts ImportOptions, err error
 }
 
 // GetImportStatus retrieves the status for an import.
-func (d *dao) GetImportStatus(importID ImportID) (status Status, err error) {
+func (d *dao) GetImportStatus(importID ImportID) (status ImportStatus, err error) {
 	q, args, err := sq.
 		Select("status").
 		From("imports").
@@ -135,7 +136,7 @@ func (d *dao) GetImportStatus(importID ImportID) (status Status, err error) {
 }
 
 // SetImportStatus sets the status for an existing import.
-func (d *dao) SetImportStatus(importID ImportID, status Status) error {
+func (d *dao) SetImportStatus(importID ImportID, status ImportStatus) error {
 	q, args, err := sq.
 		Update("imports").
 		Set("status", status).
@@ -152,7 +153,7 @@ func (d *dao) SetImportStatus(importID ImportID, status Status) error {
 
 // RecordImportFailure sets an import's status to FAILED and records the error message.
 func (d *dao) RecordImportFailure(importID ImportID, msg error) error {
-	if err := d.SetImportStatus(importID, StatusFailed); err != nil {
+	if err := d.SetImportStatus(importID, ImportStatusFailed); err != nil {
 		return fmt.Errorf("set import status: %v", err)
 	}
 

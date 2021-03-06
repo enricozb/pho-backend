@@ -27,7 +27,7 @@ func (w *metadataWorker) Work(jobID jobs.JobID) error {
 		return fmt.Errorf("get job info: %v", err)
 	}
 
-	if err := w.dao.SetImportStatus(importID, jobs.StatusMetadata); err != nil {
+	if err := w.dao.SetImportStatus(importID, jobs.ImportStatusMetadata); err != nil {
 		return fmt.Errorf("set import status: %v", err)
 	}
 

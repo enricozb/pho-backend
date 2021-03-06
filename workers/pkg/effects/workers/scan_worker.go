@@ -33,7 +33,7 @@ func (w *scanWorker) Work(jobID jobs.JobID) error {
 		return fmt.Errorf("get job info: %v", err)
 	}
 
-	if err := w.dao.SetImportStatus(importID, jobs.StatusScan); err != nil {
+	if err := w.dao.SetImportStatus(importID, jobs.ImportStatusScan); err != nil {
 		return fmt.Errorf("set import status: %v", err)
 	}
 

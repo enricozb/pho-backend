@@ -25,5 +25,5 @@ func TestWorkers_MetadataWorker(t *testing.T) {
 		assertDidEnqueueJob(assert, dao, importID, metadataJobKind)
 	}
 
-	assertDidSetImportStatus(assert, dao, importID, jobs.StatusMetadata)
+	assertDidSetImportStatus(assert, dao, importID, jobs.ImportStatusMetadata)
 }

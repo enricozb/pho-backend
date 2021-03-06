@@ -19,7 +19,7 @@ func setup(t *testing.T) (*require.Assertions, *sqlx.DB, daos.Dao, func()) {
 	return assert, db, dao, cleanup
 }
 
-func assertDidSetImportStatus(assert *require.Assertions, dao jobs.Dao, importID jobs.ImportID, expectedStatus jobs.Status) {
+func assertDidSetImportStatus(assert *require.Assertions, dao jobs.Dao, importID jobs.ImportID, expectedStatus jobs.ImportStatus) {
 	actualStatus, err := dao.GetImportStatus(importID)
 	assert.NoError(err, "get import status")
 

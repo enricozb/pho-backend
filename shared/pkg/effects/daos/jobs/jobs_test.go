@@ -31,7 +31,7 @@ func TestJobs_NewImport(t *testing.T) {
 	status, err := dao.GetImportStatus(importID)
 	assert.NoError(err, "get import status")
 
-	assert.Equal(jobs.StatusNotStarted, status)
+	assert.Equal(jobs.ImportStatusNotStarted, status)
 }
 
 func TestJobs_SetImportStatus(t *testing.T) {
@@ -39,13 +39,13 @@ func TestJobs_SetImportStatus(t *testing.T) {
 	defer cleanup()
 
 	importID := testutil.MockImport(t, db)
-	err := dao.SetImportStatus(importID, jobs.StatusDedupe)
+	err := dao.SetImportStatus(importID, jobs.ImportStatusDedupe)
 	assert.NoError(err, "set import status")
 
 	status, err := dao.GetImportStatus(importID)
 	assert.NoError(err, "get import status")
 
-	assert.Equal(jobs.StatusDedupe, status)
+	assert.Equal(jobs.ImportStatusDedupe, status)
 }
 
 func TestJobs_PushPeekPopJob(t *testing.T) {

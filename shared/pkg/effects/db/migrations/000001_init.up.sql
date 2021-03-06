@@ -25,6 +25,13 @@ INSERT INTO job_kinds(kind) VALUES
     ('CONVERT_MONITOR'),
     ('CLEANUP');
 
+CREATE TABLE job_statuses(status TEXT NOT NULL);
+INSERT INTO job_statuses(status) VALUES
+    ('NOT_STARTED'),
+    ('STARTED'),
+    ('DONE'),
+    ('FAILED');
+
 CREATE TABLE imports (
   id         UUID     PRIMARY KEY,
   opts       TEXT     NOT NULL,
@@ -45,6 +52,7 @@ CREATE TABLE import_failures (
 CREATE TABLE jobs (
   id         UUID     PRIMARY KEY,
   import_id  UUID     NOT NULL REFERENCES imports(id),
+  status     TEXT     NOT NULL REFERENCES job_statuses(status) DEFAULT 'NOT_STARTED',
   kind       TEXT     NOT NULL REFERENCES job_kinds(kind),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
