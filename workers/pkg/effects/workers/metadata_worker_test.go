@@ -19,6 +19,8 @@ func TestWorkers_MetadataWorker(t *testing.T) {
 	metadataWorker := workers.NewMetadataWorker(dao)
 	assert.NoError(metadataWorker.Work(jobID))
 
+	// Check that the monitor and all metadata jobs were enqueued.
+	assertDidEnqueueJob(assert, dao, importID, jobs.JobMetadataMonitor)
 	for _, metadataJobKind := range jobs.MetadataJobKinds {
 		assertDidEnqueueJob(assert, dao, importID, metadataJobKind)
 	}

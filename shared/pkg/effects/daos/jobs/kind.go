@@ -8,7 +8,7 @@ const (
 	JobMetadataHash      JobKind = "METADATA_HASH"
 	JobMetadataTimestamp JobKind = "METADATA_TIMESTAMP"
 	JobMetadataLive      JobKind = "METADATA_LIVE"
-	JobMetadata_monitor  JobKind = "METADATA_MONITOR"
+	JobMetadataMonitor   JobKind = "METADATA_MONITOR"
 	JobDedupe            JobKind = "DEDUPE"
 	JobConvert           JobKind = "CONVERT"
 	JobConvertVideo      JobKind = "CONVERT_VIDEO"

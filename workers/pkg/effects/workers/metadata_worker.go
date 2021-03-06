@@ -37,5 +37,9 @@ func (w *metadataWorker) Work(jobID jobs.JobID) error {
 		}
 	}
 
+	if _, err := w.dao.PushJob(importID, jobs.JobMetadataMonitor); err != nil {
+		return fmt.Errorf("push monitor job: %v", err)
+	}
+
 	return nil
 }
