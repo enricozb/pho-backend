@@ -42,4 +42,7 @@ func TestJobs_ScanWorker(t *testing.T) {
 	assert.NoError(err, "paths")
 
 	assert.Len(paths, 3)
+
+	status, err := dao.GetImportStatus(importID)
+	assert.Equal(jobs.StatusScan, status)
 }
