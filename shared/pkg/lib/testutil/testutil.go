@@ -29,7 +29,11 @@ func MockDB(t *testing.T) (mockDB *sqlx.DB, cleanup func()) {
 }
 
 func MockImport(t *testing.T, db *sqlx.DB) jobs.ImportID {
-	importID, err := jobs.NewDao(db).NewImport(jobs.ImportOptions{})
+	return MockImportWithOptions(t, db, jobs.ImportOptions{})
+}
+
+func MockImportWithOptions(t *testing.T, db *sqlx.DB, opts jobs.ImportOptions) jobs.ImportID {
+	importID, err := jobs.NewDao(db).NewImport(opts)
 	assert.NoError(t, err, "new import")
 
 	return importID
