@@ -74,8 +74,8 @@ func TestJobs_PushPeekPopJob(t *testing.T) {
 	assert.NoError(err, "pop job")
 	assert.True(ok, "pop job ok")
 
-	// should change due to a pop
-	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
+	// should not change due to a pop
+	assert.Equal(1, testutil.NumRows(t, db, "jobs"))
 
 	assert.Equal(jobID, job.ID)
 	assert.Equal(importID, job.ImportID)
@@ -101,40 +101,6 @@ func TestJobs_NumJobs(t *testing.T) {
 	actualNumJobs, err := dao.NumJobs()
 	assert.NoError(err, "num jobs")
 	assert.Equal(numJobs, actualNumJobs, "num jobs")
-}
-
-func TestJobs_DeleteJob(t *testing.T) {
-	assert, db, dao, cleanup := setup(t)
-	defer cleanup()
-
-	importID := testutil.MockImport(t, db)
-	assert.Equal(0, testutil.NumRows(t, db, "jobs"))
-
-	// insert some jobs...
-	numJobs := 10
-	jobIDs := make([]jobs.JobID, numJobs)
-	for i := range jobIDs {
-		var err error
-		jobIDs[i], err = dao.PushJob(importID, jobs.JobScan)
-		assert.NoError(err, "push job")
-	}
-
-	assert.Equal(numJobs, testutil.NumRows(t, db, "jobs"))
-
-	for _, jobID := range jobIDs {
-		assert.NoError(dao.DeleteJob(jobID), "delete job")
-		numJobs -= 1
-
-		allJobs, err := dao.AllJobs()
-		assert.NoError(err, "all jobs")
-
-		assert.Equal(numJobs, len(allJobs))
-
-		// none of the remaining jobs should have the same ID as the deleted job
-		for _, job := range allJobs {
-			assert.NotEqual(jobID, job.ID)
-		}
-	}
 }
 
 func TestJobs_ImportFailures(t *testing.T) {
@@ -184,4 +150,39 @@ func TestJobs_GetJobImportID(t *testing.T) {
 	assert.NoError(err, "get job import id")
 
 	assert.Equal(expectedImportID, actualImportID)
+}
+
+func TestJobs_GetSetJobStatus(t *testing.T) {
+	assert, db, dao, cleanup := setup(t)
+	defer cleanup()
+
+	expectedImportID := testutil.MockImport(t, db)
+
+	jobID, err := dao.PushJob(expectedImportID, jobs.JobScan)
+	assert.NoError(err, "push job")
+
+	// check that job status defaults to to NOT_STARTED
+	jobStatus, err := dao.GetJobStatus(jobID)
+	assert.NoError(err, "get job status")
+	assert.Equal(jobs.JobStatusNotStarted, jobStatus)
+
+	job, ok, err := dao.PopJob()
+	assert.NoError(err, "pop job")
+	assert.True(ok, "pop job ok")
+
+	// check that the same job that was pushed was the one that was popped
+	assert.Equal(jobID, job.ID)
+
+	// check that job status changed to STARTED
+	jobStatus, err = dao.GetJobStatus(jobID)
+	assert.NoError(err, "get job status")
+	assert.Equal(jobs.JobStatusStarted, jobStatus)
+
+	err = dao.FinishJob(jobID)
+	assert.NoError(err, "finish job")
+
+	// check that job status changed to DONE
+	jobStatus, err = dao.GetJobStatus(jobID)
+	assert.NoError(err, "get job status")
+	assert.Equal(jobs.JobStatusDone, jobStatus)
 }

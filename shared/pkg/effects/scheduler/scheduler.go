@@ -64,7 +64,7 @@ func (s *Scheduler) ProcessNext() error {
 		if worker, workerExists := s.workers[job.Kind]; !workerExists {
 			return fmt.Errorf("no worker for job kind: %s", job.Kind)
 		} else if err := worker.Work(job.ID); err != nil {
-			return s.dao.RecordImportFailure(job.ImportID, err)
+			return s.dao.RecordJobFailure(job, err)
 		}
 	}
 

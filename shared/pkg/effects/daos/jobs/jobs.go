@@ -44,6 +44,9 @@ type Dao interface {
 	// RecordImportFailure sets an import's status to FAILED and records the error message.
 	RecordImportFailure(importID ImportID, msg error) error
 
+	// RecordJobFailure sets a job's (and its import) status to failed.
+	RecordJobFailure(job Job, msg error) error
+
 	// GetImportFailureMessages gets an import's failure messages.
 	GetImportFailureMessages(importID ImportID) ([]string, error)
 
@@ -56,14 +59,23 @@ type Dao interface {
 	// PushJob adds a new job to the queue.
 	PushJob(importID ImportID, kind JobKind) (JobID, error)
 
-	// PeekJob retrieves a job from the queue, but does not delete it.
+	// PeekJob retrieves a job from the queue, but does not modify its status.
 	PeekJob() (Job, error)
 
-	// PopJob retrieves a job from the queue, and deletes it. If no job is available, the boolean return argument is false, and err is nil.
+	// PopJob retrieves a job from the queue, and sets its status to 'STARTED'. If no job is available, the boolean return argument is false, and err is nil.
 	PopJob() (Job, bool, error)
 
-	// DeleteJob deletes a job from the queue.
-	DeleteJob(jobID JobID) error
+	// StartJob sets a job's status to STARTED.
+	StartJob(jobID JobID) error
+
+	// FinishJob sets a job's status to DONE.
+	FinishJob(jobID JobID) error
+
+	// SetJobStatus sets a job's status.
+	SetJobStatus(jobID JobID, status JobStatus) error
+
+	// GetJobStatus gets a job's status.
+	GetJobStatus(jobID JobID) (JobStatus, error)
 
 	// GetJobImportID retrieves the importID for a job.
 	GetJobImportID(jobID JobID) (ImportID, error)
@@ -167,6 +179,15 @@ func (d *dao) RecordImportFailure(importID ImportID, msg error) error {
 	return err
 }
 
+// RecordJobFailure sets a job's (and its import) status to failed.
+func (d *dao) RecordJobFailure(job Job, msg error) error {
+	if err := d.SetJobStatus(job.ID, JobStatusFailed); err != nil {
+		return fmt.Errorf("set job status: %v", err)
+	}
+
+	return d.RecordImportFailure(job.ImportID, msg)
+}
+
 // GetImportFailureMessages gets an import's failure messages.
 func (d *dao) GetImportFailureMessages(importID ImportID) (messages []string, err error) {
 	q, args, err := sq.
@@ -228,7 +249,7 @@ func (d *dao) PushJob(importID ImportID, kind JobKind) (jobID JobID, err error) 
 	return jobID, err
 }
 
-// PeekJob retrieves a job from the queue, but does not delete it.
+// PeekJob retrieves a job from the queue, but does not modify its status.
 func (d *dao) PeekJob() (job Job, err error) {
 	q, args, err := sq.
 		Select("*").
@@ -243,7 +264,7 @@ func (d *dao) PeekJob() (job Job, err error) {
 	return job, d.db.Get(&job, q, args...)
 }
 
-// PopJob retrieves a job from the queue, and deletes it. If no job is available, the boolean return argument is false, and err is nil.
+// PopJob retrieves a job from the queue, and sets its status to 'STARTED'. If no job is available, the boolean return argument is false, and err is nil.
 // TODO(enricozb): it takes three database queries to do this when it might be possible to do in one.
 func (d *dao) PopJob() (Job, bool, error) {
 	d.popMutex.Lock()
@@ -260,17 +281,28 @@ func (d *dao) PopJob() (Job, bool, error) {
 		return Job{}, false, fmt.Errorf("peek job: %w", err)
 	}
 
-	if err := d.DeleteJob(job.ID); err != nil {
-		return Job{}, false, fmt.Errorf("delete job: %w", err)
+	if err := d.StartJob(job.ID); err != nil {
+		return Job{}, false, fmt.Errorf("start job: %w", err)
 	}
 
 	return job, true, nil
 }
 
-// DeleteJob deletes a job from the queue.
-func (d *dao) DeleteJob(jobID JobID) error {
+// StartJob sets a job's status to STARTED.
+func (d *dao) StartJob(jobID JobID) error {
+	return d.SetJobStatus(jobID, JobStatusStarted)
+}
+
+// FinishJob sets a job's status to DONE.
+func (d *dao) FinishJob(jobID JobID) error {
+	return d.SetJobStatus(jobID, JobStatusDone)
+}
+
+// SetJobStatus sets a job's status.
+func (d *dao) SetJobStatus(jobID JobID, status JobStatus) error {
 	q, args, err := sq.
-		Delete("jobs").
+		Update("jobs").
+		Set("status", status).
 		Where("id = ?", jobID).
 		ToSql()
 
@@ -278,8 +310,24 @@ func (d *dao) DeleteJob(jobID JobID) error {
 		return fmt.Errorf("build query: %v", err)
 	}
 
+	fmt.Printf("query: %s\n", q)
 	_, err = d.db.Exec(q, args...)
 	return err
+}
+
+// GetJobStatus gets a job's status.
+func (d *dao) GetJobStatus(jobID JobID) (status JobStatus, err error) {
+	q, args, err := sq.
+		Select("status").
+		From("jobs").
+		Where("id = ?", jobID).
+		ToSql()
+
+	if err != nil {
+		return "", fmt.Errorf("build query: %v", err)
+	}
+
+	return status, d.db.Get(&status, q, args...)
 }
 
 // GetJobImportID retrieves the importID for a job.
