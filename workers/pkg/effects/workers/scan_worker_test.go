@@ -10,7 +10,7 @@ import (
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
-func TestJobs_ScanWorker(t *testing.T) {
+func TestWorkers_ScanWorker(t *testing.T) {
 	assert, db, dao, cleanup := setup(t)
 	defer cleanup()
 
