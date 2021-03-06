@@ -31,6 +31,9 @@ type Dao interface {
 	// NewImport starts a new import.
 	NewImport(opts ImportOptions) (ImportID, error)
 
+	// GetImportOptions retrieves the options for an import.
+	GetImportOptions(importID ImportID) (ImportOptions, error)
+
 	// GetImportStatus retrieves the status for an import.
 	GetImportStatus(importID ImportID) (Status, error)
 
@@ -91,6 +94,26 @@ func (d *dao) NewImport(opts ImportOptions) (importID ImportID, err error) {
 
 	_, err = d.db.Exec(q, args...)
 	return importID, err
+}
+
+// GetImportOptions retrieves the options for an import.
+func (d *dao) GetImportOptions(importID ImportID) (opts ImportOptions, err error) {
+	q, args, err := sq.
+		Select("opts").
+		From("imports").
+		Where("id = ?", importID).
+		ToSql()
+
+	if err != nil {
+		return ImportOptions{}, fmt.Errorf("build query: %v", err)
+	}
+
+	var importOptionsJson []byte
+	if err := d.db.Get(&importOptionsJson, q, args...); err != nil {
+		return ImportOptions{}, fmt.Errorf("get: %v", err)
+	}
+
+	return opts, json.Unmarshal(importOptionsJson, &opts)
 }
 
 // GetImportStatus retrieves the status for an import.

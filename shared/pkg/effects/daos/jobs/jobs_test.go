@@ -156,3 +156,18 @@ func TestJobs_ImportFailures(t *testing.T) {
 
 	assert.ElementsMatch(expectedMessages, actualMessages)
 }
+
+func TestJobs_ImportOptions(t *testing.T) {
+	assert, _, dao, cleanup := setup(t)
+	defer cleanup()
+
+	expectedOpts := jobs.ImportOptions{Paths: []string{"path1", "path2", "path3"}}
+
+	importID, err := dao.NewImport(expectedOpts)
+	assert.NoError(err, "new import")
+
+	actualOpts, err := dao.GetImportOptions(importID)
+	assert.NoError(err, "get import opts")
+
+	assert.Equal(expectedOpts, actualOpts)
+}
