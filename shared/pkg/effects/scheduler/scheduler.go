@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
-	"github.com/enricozb/pho/shared/pkg/effects/worker"
+	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
 type Scheduler struct {

@@ -11,8 +11,8 @@ import (
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/scheduler"
-	"github.com/enricozb/pho/shared/pkg/effects/worker"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
+	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
 func setup(t *testing.T) (*require.Assertions, *sqlx.DB, jobs.Dao, func()) {
