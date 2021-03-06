@@ -63,6 +63,9 @@ type Dao interface {
 
 	// DeleteJob deletes a job from the queue.
 	DeleteJob(jobID JobID) error
+
+	// GetJobImportID retrieves the importID for a job.
+	GetJobImportID(jobID JobID) (ImportID, error)
 }
 
 type dao struct {
@@ -276,4 +279,19 @@ func (d *dao) DeleteJob(jobID JobID) error {
 
 	_, err = d.db.Exec(q, args...)
 	return err
+}
+
+// GetJobImportID retrieves the importID for a job.
+func (d *dao) GetJobImportID(jobID JobID) (importID ImportID, err error) {
+	q, args, err := sq.
+		Select("import_id").
+		From("jobs").
+		Where("id = ?", jobID).
+		ToSql()
+
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("build query: %v", err)
+	}
+
+	return importID, d.db.Get(&importID, q, args...)
 }

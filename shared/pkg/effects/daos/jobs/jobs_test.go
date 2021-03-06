@@ -158,16 +158,30 @@ func TestJobs_ImportFailures(t *testing.T) {
 }
 
 func TestJobs_ImportOptions(t *testing.T) {
-	assert, _, dao, cleanup := setup(t)
+	assert, db, dao, cleanup := setup(t)
 	defer cleanup()
 
 	expectedOpts := jobs.ImportOptions{Paths: []string{"path1", "path2", "path3"}}
 
-	importID, err := dao.NewImport(expectedOpts)
-	assert.NoError(err, "new import")
+	importID := testutil.MockImportWithOptions(t, db, expectedOpts)
 
 	actualOpts, err := dao.GetImportOptions(importID)
 	assert.NoError(err, "get import opts")
 
 	assert.Equal(expectedOpts, actualOpts)
+}
+
+func TestJobs_GetJobImportID(t *testing.T) {
+	assert, db, dao, cleanup := setup(t)
+	defer cleanup()
+
+	expectedImportID := testutil.MockImport(t, db)
+
+	jobID, err := dao.PushJob(expectedImportID, jobs.JobScan)
+	assert.NoError(err, "push job")
+
+	actualImportID, err := dao.GetJobImportID(jobID)
+	assert.NoError(err, "get job import id")
+
+	assert.Equal(expectedImportID, actualImportID)
 }
