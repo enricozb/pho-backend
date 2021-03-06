@@ -16,3 +16,9 @@ const (
 	JobConvertMonitor    JobKind = "CONVERT_MONITOR"
 	JobCleanup           JobKind = "CLEANUP"
 )
+
+var MetadataJobKinds = []JobKind{
+	JobMetadataHash,
+	JobMetadataLive,
+	JobMetadataTimestamp,
+}
