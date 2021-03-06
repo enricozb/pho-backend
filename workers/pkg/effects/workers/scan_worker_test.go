@@ -5,22 +5,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/require"
-
-	"github.com/enricozb/pho/shared/pkg/effects/daos"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
-
-func setup(t *testing.T) (*require.Assertions, *sqlx.DB, daos.Dao, func()) {
-	assert := require.New(t)
-	db, cleanup := testutil.MockDB(t)
-	dao := daos.NewDao(db)
-
-	return assert, db, dao, cleanup
-}
 
 func TestJobs_ScanWorker(t *testing.T) {
 	assert, db, dao, cleanup := setup(t)
@@ -43,6 +31,5 @@ func TestJobs_ScanWorker(t *testing.T) {
 
 	assert.Len(paths, 3)
 
-	status, err := dao.GetImportStatus(importID)
-	assert.Equal(jobs.StatusScan, status)
+	assertDidSetImportStatus(t, dao, importID, jobs.StatusScan)
 }
