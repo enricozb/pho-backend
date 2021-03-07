@@ -1,34 +1,16 @@
 package db
 
 import (
-	"fmt"
-	"path/filepath"
-	"runtime"
+	"gorm.io/gorm"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 )
 
-func Migrate(db *sqlx.DB) error {
-	driver, err := sqlite3.WithInstance(db.DB, &sqlite3.Config{})
-	if err != nil {
-		return fmt.Errorf("with instance: %v", err)
-	}
+var Tables = []interface{}{
+	&jobs.Job{},
+	&jobs.Import{},
+}
 
-	_, path, _, ok := runtime.Caller(0)
-	if !ok {
-		return fmt.Errorf("get migration path")
-	}
-
-	migrationPath := "file://" + filepath.Join(filepath.Dir(path), "migrations")
-	migrator, err := migrate.NewWithDatabaseInstance(migrationPath, "sqlite3", driver)
-
-	if err != nil {
-		return fmt.Errorf("migrate new: %v", err)
-	}
-
-	return migrator.Up()
+func Migrate(db *gorm.DB) error {
+	return db.AutoMigrate(Tables...)
 }

@@ -2,345 +2,69 @@ package jobs
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"sync"
 	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
-type ImportID = uuid.UUID
-type JobID = uuid.UUID
-
 type Job struct {
-	ID        uuid.UUID `db:"id"`
-	ImportID  ImportID  `db:"import_id"`
-	Status    JobStatus `db:"status"`
-	Kind      JobKind   `db:"kind"`
-	CreatedAt time.Time `db:"created_at"`
+	ID        uuid.UUID
+	Status    JobStatus
+	Kind      JobKind
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	ImportID  uuid.UUID
+
+	Import Import
+}
+
+type Import struct {
+	ID        uuid.UUID     `gorm:"type:uuid"`
+	Opts      ImportOptions `gorm:"-"`
+	Status    ImportStatus  `gorm:"default:'NOT_STARTED'"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+
+	// OptsJSON should not be set manually, it is used as an intermediate
+	// between gorm and unmarshaling to Import.Opts.
+	OptsJSON []byte `gorm:"column:opts"`
 }
 
 type ImportOptions struct {
 	Paths []string `json:"paths"`
 }
 
-var _ Dao = &dao{}
-
-type Dao interface {
-	// NewImport starts a new import.
-	NewImport(opts ImportOptions) (ImportID, error)
-
-	// GetImportOptions retrieves the options for an import.
-	GetImportOptions(importID ImportID) (ImportOptions, error)
-
-	// GetImportStatus retrieves the status for an import.
-	GetImportStatus(importID ImportID) (ImportStatus, error)
-
-	// SetImportStatus sets the status for an existing import.
-	SetImportStatus(importID ImportID, status ImportStatus) error
-
-	// RecordImportFailure sets an import's status to FAILED and records the error message.
-	RecordImportFailure(importID ImportID, msg error) error
-
-	// RecordJobFailure sets a job's (and its import) status to failed.
-	RecordJobFailure(job Job, msg error) error
-
-	// GetImportFailureMessages gets an import's failure messages.
-	GetImportFailureMessages(importID ImportID) ([]string, error)
-
-	// AllJobs returns all jobs.
-	AllJobs() ([]Job, error)
-
-	// NumJobs returns the number of jobs.
-	NumJobs() (int, error)
-
-	// PushJob adds a new job to the queue.
-	PushJob(importID ImportID, kind JobKind) (JobID, error)
-
-	// PeekJob retrieves a job from the queue, but does not modify its status.
-	PeekJob() (Job, error)
-
-	// PopJob retrieves a job from the queue, and sets its status to 'STARTED'. If no job is available, the boolean return argument is false, and err is nil.
-	PopJob() (Job, bool, error)
-
-	// StartJob sets a job's status to STARTED.
-	StartJob(jobID JobID) error
-
-	// FinishJob sets a job's status to DONE.
-	FinishJob(jobID JobID) error
-
-	// SetJobStatus sets a job's status.
-	SetJobStatus(jobID JobID, status JobStatus) error
-
-	// GetJobStatus gets a job's status.
-	GetJobStatus(jobID JobID) (JobStatus, error)
-
-	// GetJobImportID retrieves the importID for a job.
-	GetJobImportID(jobID JobID) (ImportID, error)
+// BeforeSave creates a new uuid.
+func (i *Import) BeforeSave(tx *gorm.DB) error {
+	i.ID = uuid.New()
+	return nil
 }
 
-type dao struct {
-	db       *sqlx.DB
-	popMutex sync.Mutex
+// BeforeSave creates a new uuid.
+func (job *Job) BeforeSave(tx *gorm.DB) error {
+	job.ID = uuid.New()
+	return nil
 }
 
-func NewDao(conn *sqlx.DB) *dao {
-	return &dao{db: conn}
-}
+// BeforeCreate marshals Import.Opts into Import.OptsJSON.
+func (i *Import) BeforeCreate(tx *gorm.DB) error {
+	if len(i.OptsJSON) != 0 {
+		return errors.New("Import.OptsJSON should not be set manually")
+	}
 
-func (d *dao) NewImport(opts ImportOptions) (importID ImportID, err error) {
-	optsBytes, err := json.Marshal(opts)
+	bytes, err := json.Marshal(i.Opts)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("json marshal: %v", err)
+		return fmt.Errorf("marshall: %v", err)
 	}
 
-	importID = uuid.New()
-
-	q, args, err := sq.
-		Insert("imports").
-		Columns("id", "opts").
-		Values(importID, optsBytes).
-		ToSql()
-
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("build query: %v", err)
-	}
-
-	_, err = d.db.Exec(q, args...)
-	return importID, err
+	i.OptsJSON = bytes
+	return nil
 }
 
-// GetImportOptions retrieves the options for an import.
-func (d *dao) GetImportOptions(importID ImportID) (opts ImportOptions, err error) {
-	q, args, err := sq.
-		Select("opts").
-		From("imports").
-		Where("id = ?", importID).
-		ToSql()
-
-	if err != nil {
-		return ImportOptions{}, fmt.Errorf("build query: %v", err)
-	}
-
-	var importOptionsJson []byte
-	if err := d.db.Get(&importOptionsJson, q, args...); err != nil {
-		return ImportOptions{}, fmt.Errorf("get: %v", err)
-	}
-
-	return opts, json.Unmarshal(importOptionsJson, &opts)
-}
-
-// GetImportStatus retrieves the status for an import.
-func (d *dao) GetImportStatus(importID ImportID) (status ImportStatus, err error) {
-	q, args, err := sq.
-		Select("status").
-		From("imports").
-		Where("id = ?", importID).
-		ToSql()
-
-	if err != nil {
-		return "", fmt.Errorf("build query: %v", err)
-	}
-
-	return status, d.db.Get(&status, q, args...)
-}
-
-// SetImportStatus sets the status for an existing import.
-func (d *dao) SetImportStatus(importID ImportID, status ImportStatus) error {
-	q, args, err := sq.
-		Update("imports").
-		Set("status", status).
-		Where("id = ?", importID).
-		ToSql()
-
-	if err != nil {
-		return fmt.Errorf("build query: %v", err)
-	}
-
-	_, err = d.db.Exec(q, args...)
-	return err
-}
-
-// RecordImportFailure sets an import's status to FAILED and records the error message.
-func (d *dao) RecordImportFailure(importID ImportID, msg error) error {
-	if err := d.SetImportStatus(importID, ImportStatusFailed); err != nil {
-		return fmt.Errorf("set import status: %v", err)
-	}
-
-	q, args, err := sq.
-		Insert("import_failures").
-		Columns("import_id", "message").
-		Values(importID, msg.Error()).
-		ToSql()
-
-	_, err = d.db.Exec(q, args...)
-	return err
-}
-
-// RecordJobFailure sets a job's (and its import) status to failed.
-func (d *dao) RecordJobFailure(job Job, msg error) error {
-	if err := d.SetJobStatus(job.ID, JobStatusFailed); err != nil {
-		return fmt.Errorf("set job status: %v", err)
-	}
-
-	return d.RecordImportFailure(job.ImportID, msg)
-}
-
-// GetImportFailureMessages gets an import's failure messages.
-func (d *dao) GetImportFailureMessages(importID ImportID) (messages []string, err error) {
-	q, args, err := sq.
-		Select("message").
-		From("import_failures").
-		Where("import_id = ?", importID).
-		ToSql()
-
-	if err != nil {
-		return nil, fmt.Errorf("build query: %v", err)
-	}
-
-	return messages, d.db.Select(&messages, q, args...)
-}
-
-// AllJobs returns all jobs.
-func (d *dao) AllJobs() (jobs []Job, err error) {
-	q, args, err := sq.
-		Select("*").
-		From("jobs").
-		ToSql()
-
-	if err != nil {
-		return nil, fmt.Errorf("build query: %v", err)
-	}
-
-	return jobs, d.db.Select(&jobs, q, args...)
-}
-
-// NumJobs returns the number of jobs.
-func (d *dao) NumJobs() (numJobs int, err error) {
-	q, args, err := sq.
-		Select("count(*)").
-		From("jobs").
-		ToSql()
-
-	if err != nil {
-		return 0, fmt.Errorf("build query: %v", err)
-	}
-
-	return numJobs, d.db.Get(&numJobs, q, args...)
-}
-
-// PushJob adds a new job to the queue.
-func (d *dao) PushJob(importID ImportID, kind JobKind) (jobID JobID, err error) {
-	jobID = uuid.New()
-
-	q, args, err := sq.
-		Insert("jobs").
-		Columns("id", "import_id", "kind").
-		Values(jobID, importID, kind).
-		ToSql()
-
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("build query: %v", err)
-	}
-
-	_, err = d.db.Exec(q, args...)
-	return jobID, err
-}
-
-// PeekJob retrieves a job from the queue, but does not modify its status.
-func (d *dao) PeekJob() (job Job, err error) {
-	q, args, err := sq.
-		Select("*").
-		From("jobs").
-		Limit(1).
-		ToSql()
-
-	if err != nil {
-		return Job{}, fmt.Errorf("build query: %v", err)
-	}
-
-	return job, d.db.Get(&job, q, args...)
-}
-
-// PopJob retrieves a job from the queue, and sets its status to 'STARTED'. If no job is available, the boolean return argument is false, and err is nil.
-// TODO(enricozb): it takes three database queries to do this when it might be possible to do in one.
-func (d *dao) PopJob() (Job, bool, error) {
-	d.popMutex.Lock()
-	defer d.popMutex.Unlock()
-
-	if numJobs, err := d.NumJobs(); err != nil {
-		return Job{}, false, fmt.Errorf("num jobs: %w", err)
-	} else if numJobs == 0 {
-		return Job{}, false, nil
-	}
-
-	job, err := d.PeekJob()
-	if err != nil {
-		return Job{}, false, fmt.Errorf("peek job: %w", err)
-	}
-
-	if err := d.StartJob(job.ID); err != nil {
-		return Job{}, false, fmt.Errorf("start job: %w", err)
-	}
-
-	return job, true, nil
-}
-
-// StartJob sets a job's status to STARTED.
-func (d *dao) StartJob(jobID JobID) error {
-	return d.SetJobStatus(jobID, JobStatusStarted)
-}
-
-// FinishJob sets a job's status to DONE.
-func (d *dao) FinishJob(jobID JobID) error {
-	return d.SetJobStatus(jobID, JobStatusDone)
-}
-
-// SetJobStatus sets a job's status.
-func (d *dao) SetJobStatus(jobID JobID, status JobStatus) error {
-	q, args, err := sq.
-		Update("jobs").
-		Set("status", status).
-		Where("id = ?", jobID).
-		ToSql()
-
-	if err != nil {
-		return fmt.Errorf("build query: %v", err)
-	}
-
-	fmt.Printf("query: %s\n", q)
-	_, err = d.db.Exec(q, args...)
-	return err
-}
-
-// GetJobStatus gets a job's status.
-func (d *dao) GetJobStatus(jobID JobID) (status JobStatus, err error) {
-	q, args, err := sq.
-		Select("status").
-		From("jobs").
-		Where("id = ?", jobID).
-		ToSql()
-
-	if err != nil {
-		return "", fmt.Errorf("build query: %v", err)
-	}
-
-	return status, d.db.Get(&status, q, args...)
-}
-
-// GetJobImportID retrieves the importID for a job.
-func (d *dao) GetJobImportID(jobID JobID) (importID ImportID, err error) {
-	q, args, err := sq.
-		Select("import_id").
-		From("jobs").
-		Where("id = ?", jobID).
-		ToSql()
-
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("build query: %v", err)
-	}
-
-	return importID, d.db.Get(&importID, q, args...)
+// AfterFine unmarshals Import.OptsJSON into Import.Opts.
+func (i *Import) AfterFind(tx *gorm.DB) error {
+	return json.Unmarshal(i.OptsJSON, &i.Opts)
 }
