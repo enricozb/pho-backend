@@ -10,19 +10,22 @@ import (
 	"gorm.io/gorm"
 )
 
+type ImportID = uuid.UUID
+type JobID = uuid.UUID
+
 type Job struct {
-	ID        uuid.UUID
-	Status    JobStatus
+	ID        JobID
+	Status    JobStatus `gorm:"default:'NOT_STARTED'"`
 	Kind      JobKind
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	ImportID  uuid.UUID
+	ImportID  ImportID
 
 	Import Import
 }
 
 type Import struct {
-	ID        uuid.UUID     `gorm:"type:uuid"`
+	ID        ImportID      `gorm:"type:uuid"`
 	Opts      ImportOptions `gorm:"-"`
 	Status    ImportStatus  `gorm:"default:'NOT_STARTED'"`
 	CreatedAt time.Time
@@ -37,20 +40,27 @@ type ImportOptions struct {
 	Paths []string `json:"paths"`
 }
 
-// BeforeSave creates a new uuid.
-func (i *Import) BeforeSave(tx *gorm.DB) error {
-	i.ID = uuid.New()
-	return nil
+type ImportFailure struct {
+	ID       uint
+	ImportID ImportID
+	Message  string
+
+	Import Import
 }
 
-// BeforeSave creates a new uuid.
-func (job *Job) BeforeSave(tx *gorm.DB) error {
+func (job *Job) BeforeCreate(tx *gorm.DB) error {
 	job.ID = uuid.New()
+
+	if job.Kind == "" {
+		return errors.New("Job.Kind is required")
+	}
+
 	return nil
 }
 
-// BeforeCreate marshals Import.Opts into Import.OptsJSON.
 func (i *Import) BeforeCreate(tx *gorm.DB) error {
+	i.ID = uuid.New()
+
 	if len(i.OptsJSON) != 0 {
 		return errors.New("Import.OptsJSON should not be set manually")
 	}
@@ -64,7 +74,7 @@ func (i *Import) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// AfterFine unmarshals Import.OptsJSON into Import.Opts.
+// AfterFind unmarshals Import.OptsJSON into Import.Opts.
 func (i *Import) AfterFind(tx *gorm.DB) error {
 	return json.Unmarshal(i.OptsJSON, &i.Opts)
 }

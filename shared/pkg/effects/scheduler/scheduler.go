@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
+	"gorm.io/gorm"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
 type Scheduler struct {
-	dao     jobs.Dao
+	db      *gorm.DB
 	workers map[jobs.JobKind]worker.Worker
 
 	SchedulerOptions
@@ -23,9 +24,9 @@ type SchedulerOptions struct {
 	PollingInterval time.Duration
 }
 
-func NewScheduler(dao jobs.Dao, workers map[jobs.JobKind]worker.Worker, opts SchedulerOptions) *Scheduler {
+func NewScheduler(db *gorm.DB, workers map[jobs.JobKind]worker.Worker, opts SchedulerOptions) *Scheduler {
 	return &Scheduler{
-		dao:              dao,
+		db:               db,
 		workers:          workers,
 		SchedulerOptions: opts,
 	}
@@ -55,7 +56,7 @@ func (s *Scheduler) Run() error {
 }
 
 func (s *Scheduler) ProcessNext() error {
-	job, jobExists, err := s.dao.PopJob()
+	job, jobExists, err := jobs.PopJob(s.db)
 	if err != nil {
 		return fmt.Errorf("pop job: %v", err)
 	}
@@ -64,7 +65,7 @@ func (s *Scheduler) ProcessNext() error {
 		if worker, workerExists := s.workers[job.Kind]; !workerExists {
 			return fmt.Errorf("no worker for job kind: %s", job.Kind)
 		} else if err := worker.Work(job.ID); err != nil {
-			return s.dao.RecordJobFailure(job, err)
+			return jobs.RecordJobFailure(s.db, job, err)
 		}
 	}
 

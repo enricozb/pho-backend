@@ -7,13 +7,14 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/enricozb/pho/shared/pkg/effects/db"
+	"github.com/stretchr/testify/require"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/effects/db"
 )
 
 func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {
-	assert := assert.New(t)
+	assert := require.New(t)
 
 	tmpdir, err := ioutil.TempDir("", "pho-tests-")
 	assert.NoError(err, "create tempdir")
@@ -26,9 +27,13 @@ func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {
 	return mockDB, func() { os.RemoveAll(tmpdir) }
 }
 
-// func MockImport(t *testing.T, db *sqlx.DB) jobs.ImportID {
-// 	return MockImportWithOptions(t, db, jobs.ImportOptions{})
-// }
+func MockImport(t *testing.T, db *gorm.DB) jobs.Import {
+	assert := require.New(t)
+	importEntry := jobs.Import{}
+	assert.NoError(db.Create(&importEntry).Error)
+
+	return importEntry
+}
 
 // func MockImportWithOptions(t *testing.T, db *sqlx.DB, opts jobs.ImportOptions) jobs.ImportID {
 // 	importID, err := jobs.NewDao(db).NewImport(opts)

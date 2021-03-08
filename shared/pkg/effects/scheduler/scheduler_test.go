@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/scheduler"
@@ -15,20 +15,20 @@ import (
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
-func setup(t *testing.T) (*require.Assertions, *sqlx.DB, jobs.Dao, func()) {
+func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {
 	assert := require.New(t)
 	db, cleanup := testutil.MockDB(t)
-	dao := jobs.NewDao(db)
 
-	return assert, db, dao, cleanup
+	return assert, db, cleanup
 }
 
 func TestScheduler_MissingWorker(t *testing.T) {
-	assert, db, dao, cleanup := setup(t)
+	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	importID := testutil.MockImport(t, db)
-	_, err := dao.PushJob(importID, jobs.JobScan)
+	importEntry := testutil.MockImport(t, db)
+
+	_, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
 	assert.NoError(err, "push job")
 
 	opts := scheduler.SchedulerOptions{
@@ -36,20 +36,20 @@ func TestScheduler_MissingWorker(t *testing.T) {
 		PollingInterval: 1 * time.Second,
 	}
 
-	s := scheduler.NewScheduler(dao, map[jobs.JobKind]worker.Worker{}, opts)
+	s := scheduler.NewScheduler(db, map[jobs.JobKind]worker.Worker{}, opts)
 
 	assert.EqualError(s.Run(), fmt.Sprintf("no worker for job kind: %s", jobs.JobScan))
 }
 
 func TestScheduler_WorkerErrors(t *testing.T) {
-	assert, db, dao, cleanup := setup(t)
+	assert, db, cleanup := setup(t)
 	defer cleanup()
 
 	expectedMessages := []string{}
 
-	importID := testutil.MockImport(t, db)
+	importEntry := testutil.MockImport(t, db)
 	for i := 0; i < 5; i++ {
-		_, err := dao.PushJob(importID, jobs.JobScan)
+		_, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
 		assert.NoError(err, "push job")
 
 		expectedMessages = append(expectedMessages, "mock error")
@@ -68,7 +68,7 @@ func TestScheduler_WorkerErrors(t *testing.T) {
 		),
 	}
 
-	s := scheduler.NewScheduler(dao, workers, opts)
+	s := scheduler.NewScheduler(db, workers, opts)
 
 	// TODO(enricozb): ensure that s.Run() hasn't returned with an error
 	go s.Run()
@@ -76,8 +76,16 @@ func TestScheduler_WorkerErrors(t *testing.T) {
 	// wait for errors to be recorded
 	time.Sleep(1 * time.Second)
 
-	actualMessages, err := dao.GetImportFailureMessages(importID)
-	assert.NoError(err)
+	assert.NoError(db.Find(&importEntry).Error)
+	assert.Equal(jobs.ImportStatusFailed, importEntry.Status)
+
+	failures := []jobs.ImportFailure{}
+	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&failures).Error)
+
+	actualMessages := []string{}
+	for _, failure := range failures {
+		actualMessages = append(actualMessages, failure.Message)
+	}
 
 	assert.ElementsMatch(expectedMessages, actualMessages)
 }
