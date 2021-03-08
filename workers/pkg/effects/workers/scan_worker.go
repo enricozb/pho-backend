@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/karrick/godirwalk"
+	"gorm.io/gorm"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
@@ -12,58 +13,52 @@ import (
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
-type scanWorkerDao interface {
-	jobs.Dao
-	paths.Dao
-}
-
 type scanWorker struct {
-	dao scanWorkerDao
+	db *gorm.DB
 }
 
 var _ worker.Worker = &scanWorker{}
 
-func NewScanWorker(dao scanWorkerDao) *scanWorker {
-	return &scanWorker{dao: dao}
+func NewScanWorker(db *gorm.DB) *scanWorker {
+	return &scanWorker{db: db}
 }
 
-func (w *scanWorker) Work(jobID jobs.JobID) error {
-	importID, opts, err := getJobInfo(w.dao, jobID)
-	if err != nil {
-		return fmt.Errorf("get job info: %v", err)
+func (w *scanWorker) Work(job jobs.Job) error {
+	importEntry := jobs.Import{}
+	if err := w.db.Find(&importEntry, job.ImportID).Error; err != nil {
+		return fmt.Errorf("find import: %v", err)
 	}
 
-	if err := w.dao.SetImportStatus(importID, jobs.ImportStatusScan); err != nil {
+	importEntry.Status = jobs.ImportStatusScan
+	if err := w.db.Save(&importEntry).Error; err != nil {
 		return fmt.Errorf("set import status: %v", err)
 	}
 
-	paths, err := w.walkPaths(opts.Paths)
+	paths, err := w.walkPaths(importEntry)
 	if err != nil {
 		return fmt.Errorf("walk paths: %v", err)
 	}
 
-	if _, err := w.dao.AddPaths(importID, paths); err != nil {
+	if err := w.db.Create(&paths).Error; err != nil {
 		return fmt.Errorf("add paths: %v", err)
 	}
 
-	if _, err := w.dao.PushJob(importID, jobs.JobMetadata); err != nil {
+	if _, err := jobs.PushJob(w.db, importEntry.ID, jobs.JobMetadata); err != nil {
 		return fmt.Errorf("push job: %v", err)
 	}
 
 	return nil
 }
 
-// walkPaths returns every supporeted path under `inPaths`.
-func (w *scanWorker) walkPaths(inPaths []string) (paths []string, err error) {
-	fmt.Printf("trying to find paths in %s\n", paths)
-
-	for _, path := range inPaths {
+// walkPaths returns every supported path under `importEntry.Opts.Paths`.
+func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.Path, err error) {
+	for _, path := range importEntry.Opts.Paths {
 		if !filepath.IsAbs(path) {
 			continue
 		}
 
 		if file.IsSupported(path) {
-			paths = append(paths, path)
+			supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path})
 			continue
 		}
 
@@ -71,7 +66,7 @@ func (w *scanWorker) walkPaths(inPaths []string) (paths []string, err error) {
 			err := godirwalk.Walk(path, &godirwalk.Options{
 				Callback: func(path string, de *godirwalk.Dirent) error {
 					if file.IsSupported(path) {
-						paths = append(paths, path)
+						supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path})
 					}
 
 					return nil
@@ -85,5 +80,5 @@ func (w *scanWorker) walkPaths(inPaths []string) (paths []string, err error) {
 		}
 	}
 
-	return paths, nil
+	return supportedPaths, nil
 }
