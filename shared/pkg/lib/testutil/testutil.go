@@ -28,19 +28,17 @@ func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {
 }
 
 func MockImport(t *testing.T, db *gorm.DB) jobs.Import {
+	return MockImportWithOptions(t, db, jobs.ImportOptions{})
+}
+
+func MockImportWithOptions(t *testing.T, db *gorm.DB, opts jobs.ImportOptions) jobs.Import {
 	assert := require.New(t)
-	importEntry := jobs.Import{}
+	importEntry := jobs.Import{Opts: opts}
 	assert.NoError(db.Create(&importEntry).Error)
 
 	return importEntry
+
 }
-
-// func MockImportWithOptions(t *testing.T, db *sqlx.DB, opts jobs.ImportOptions) jobs.ImportID {
-// 	importID, err := jobs.NewDao(db).NewImport(opts)
-// 	assert.NoError(t, err, "new import")
-
-// 	return importID
-// }
 
 // func NumRows(t *testing.T, db *sqlx.DB, tableName string) (count int) {
 // 	assert := assert.New(t)
