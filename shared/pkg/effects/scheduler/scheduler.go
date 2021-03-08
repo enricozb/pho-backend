@@ -64,7 +64,7 @@ func (s *Scheduler) ProcessNext() error {
 	if jobExists {
 		if worker, workerExists := s.workers[job.Kind]; !workerExists {
 			return fmt.Errorf("no worker for job kind: %s", job.Kind)
-		} else if err := worker.Work(job.ID); err != nil {
+		} else if err := worker.Work(job); err != nil {
 			return jobs.RecordJobFailure(s.db, job, err)
 		}
 	}

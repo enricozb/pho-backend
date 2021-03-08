@@ -62,7 +62,7 @@ func TestScheduler_WorkerErrors(t *testing.T) {
 
 	workers := map[jobs.JobKind]worker.Worker{
 		jobs.JobScan: worker.NewMockWorker(
-			func(importID jobs.ImportID) error {
+			func(job jobs.Job) error {
 				return errors.New("mock error")
 			},
 		),
