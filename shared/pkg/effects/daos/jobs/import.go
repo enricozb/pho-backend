@@ -11,18 +11,6 @@ import (
 )
 
 type ImportID = uuid.UUID
-type JobID = uuid.UUID
-
-type Job struct {
-	ID        JobID
-	Status    JobStatus `gorm:"default:'NOT_STARTED'"`
-	Kind      JobKind
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	ImportID  ImportID
-
-	Import Import
-}
 
 type Import struct {
 	ID        ImportID      `gorm:"type:uuid"`
@@ -46,16 +34,6 @@ type ImportFailure struct {
 	Message  string
 
 	Import Import
-}
-
-func (job *Job) BeforeCreate(tx *gorm.DB) error {
-	job.ID = uuid.New()
-
-	if job.Kind == "" {
-		return errors.New("Job.Kind is required")
-	}
-
-	return nil
 }
 
 func (i *Import) BeforeCreate(tx *gorm.DB) error {
