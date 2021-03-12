@@ -13,7 +13,7 @@ func TestJobs_JobSmokeTest(t *testing.T) {
 	insertedImport := jobs.Import{}
 	db.Create(&insertedImport)
 
-	insertedJob := jobs.Job{ImportID: insertedImport.ID, Kind: jobs.JobScan}
+	insertedJob := jobs.Job{ImportID: insertedImport.ID, Kind: jobs.JobScan, Args: []byte("{}")}
 	db.Create(&insertedJob)
 
 	foundJob := jobs.Job{ImportID: insertedImport.ID}

@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -14,7 +15,17 @@ func NumJobs(db *gorm.DB) (count int64, err error) {
 }
 
 func PushJob(db *gorm.DB, importID ImportID, kind JobKind) (Job, error) {
-	job := Job{ImportID: importID, Kind: kind, Status: JobStatusNotStarted}
+	job := Job{ImportID: importID, Kind: kind}
+	return job, db.Create(&job).Error
+}
+
+func PushJobWithArgs(db *gorm.DB, importID ImportID, kind JobKind, args interface{}) (Job, error) {
+	data, err := json.Marshal(args)
+	if err != nil {
+		return Job{}, fmt.Errorf("marshal: %v", err)
+	}
+
+	job := Job{ImportID: importID, Kind: kind, Args: data}
 	return job, db.Create(&job).Error
 }
 

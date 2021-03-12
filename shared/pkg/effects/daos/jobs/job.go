@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -14,6 +15,7 @@ type Job struct {
 	ID        JobID
 	Status    JobStatus `gorm:"default:'NOT_STARTED'"`
 	Kind      JobKind
+	Args      []byte `gorm:"default:'{}'"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	ImportID  ImportID
@@ -29,4 +31,8 @@ func (job *Job) BeforeCreate(tx *gorm.DB) error {
 	}
 
 	return nil
+}
+
+func (job *Job) GetArgs(i interface{}) error {
+	return json.Unmarshal(job.Args, i)
 }

@@ -13,7 +13,7 @@ func TestJobs_ImportSmokeTest(t *testing.T) {
 	defer cleanup()
 
 	insertedImport := jobs.Import{Opts: jobs.ImportOptions{Paths: []string{"a", "b", "c"}}}
-	db.Create(&insertedImport)
+	assert.NoError(db.Create(&insertedImport).Error)
 
 	foundImport := jobs.Import{ID: uuid.New()}
 	assert.EqualError(db.First(&foundImport).Error, "record not found")

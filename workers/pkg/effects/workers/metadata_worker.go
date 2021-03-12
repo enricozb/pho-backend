@@ -30,13 +30,18 @@ func (w *metadataWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("set import status: %v", err)
 	}
 
+	jobIDs := []jobs.JobID{}
+
 	for _, metadataJobKind := range jobs.MetadataJobKinds {
-		if _, err := jobs.PushJob(w.db, importEntry.ID, metadataJobKind); err != nil {
+		if job, err := jobs.PushJob(w.db, importEntry.ID, metadataJobKind); err != nil {
 			return fmt.Errorf("push job (%s): %v", metadataJobKind, err)
+		} else {
+			jobIDs = append(jobIDs, job.ID)
 		}
 	}
 
-	if _, err := jobs.PushJob(w.db, importEntry.ID, jobs.JobMetadataMonitor); err != nil {
+	monitorArgs := MetadataMonitorWorkerArgs{MetadataJobIDs: jobIDs}
+	if _, err := jobs.PushJobWithArgs(w.db, importEntry.ID, jobs.JobMetadataMonitor, monitorArgs); err != nil {
 		return fmt.Errorf("push monitor job: %v", err)
 	}
 
