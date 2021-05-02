@@ -21,11 +21,11 @@ func TestWorkers_ScanWorker(t *testing.T) {
 	opts := jobs.ImportOptions{Paths: []string{path.Join(cwd, ".fixtures")}}
 
 	importEntry := testutil.MockImportWithOptions(t, db, opts)
-	jobID, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
+	job, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
 	assert.NoError(err, "push job")
 
 	scanWorker := workers.NewScanWorker(db)
-	assert.NoError(scanWorker.Work(jobID))
+	assert.NoError(scanWorker.Work(job))
 
 	var count int64
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)

@@ -23,5 +23,13 @@ func assertDidSetImportStatus(assert *require.Assertions, db *gorm.DB, importID 
 }
 
 func assertDidEnqueueJob(assert *require.Assertions, db *gorm.DB, importID jobs.ImportID, kind jobs.JobKind) {
-	assert.NoError(db.Where("import_id = ? AND kind = ?", importID, kind).Find(&jobs.Job{}).Error)
+	var count int64
+	assert.NoError(db.Model(&jobs.Job{}).Where("import_id = ? AND kind = ?", importID, kind).Count(&count).Error)
+	assert.Equal(int64(1), count)
+}
+
+func assertDidNotEnqueueJob(assert *require.Assertions, db *gorm.DB, importID jobs.ImportID, kind jobs.JobKind) {
+	var count int64
+	assert.NoError(db.Model(&jobs.Job{}).Where("import_id = ? AND kind = ?", importID, kind).Count(&count).Error)
+	assert.Equal(int64(0), count)
 }

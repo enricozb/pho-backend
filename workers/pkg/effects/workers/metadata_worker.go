@@ -40,8 +40,7 @@ func (w *metadataWorker) Work(job jobs.Job) error {
 		}
 	}
 
-	monitorArgs := MetadataMonitorWorkerArgs{MetadataJobIDs: jobIDs}
-	if _, err := jobs.PushJobWithArgs(w.db, importEntry.ID, jobs.JobMetadataMonitor, monitorArgs); err != nil {
+	if _, err := jobs.PushJobWithArgs(w.db, importEntry.ID, jobs.JobMetadataMonitor, MonitorWorkerArgs{JobIDs: jobIDs}); err != nil {
 		return fmt.Errorf("push monitor job: %v", err)
 	}
 
