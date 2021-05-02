@@ -44,8 +44,7 @@ func PopJob(db *gorm.DB) (job Job, jobExists bool, err error) {
 		return Job{}, false, fmt.Errorf("first: %v", err)
 	}
 
-	job.Status = JobStatusStarted
-	if err := db.Save(&job).Error; err != nil {
+	if err := job.SetStatus(db, JobStatusStarted); err != nil {
 		return Job{}, false, fmt.Errorf("save: %v", err)
 	}
 

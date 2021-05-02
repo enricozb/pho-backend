@@ -36,3 +36,12 @@ func (job *Job) BeforeCreate(tx *gorm.DB) error {
 func (job *Job) GetArgs(i interface{}) error {
 	return json.Unmarshal(job.Args, i)
 }
+
+func (job *Job) SetStatus(db *gorm.DB, status JobStatus) error {
+	return db.Model(&Job{}).Where("id = ?", job.ID).Update("status", status).Error
+}
+
+func GetJobStatus(db *gorm.DB, jobID JobID) (status JobStatus, err error) {
+	var job Job
+	return job.Status, db.Model(&job).Where("id = ?", jobID).Error
+}

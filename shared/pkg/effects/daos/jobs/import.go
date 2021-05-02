@@ -56,3 +56,7 @@ func (i *Import) BeforeCreate(tx *gorm.DB) error {
 func (i *Import) AfterFind(tx *gorm.DB) error {
 	return json.Unmarshal(i.OptsJSON, &i.Opts)
 }
+
+func (i *Import) SetStatus(db *gorm.DB, status ImportStatus) error {
+	return db.Model(&Import{}).Where("id = ?", i.ID).Update("status", status).Error
+}

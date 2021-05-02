@@ -25,8 +25,7 @@ func (w *metadataWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("find import: %v", err)
 	}
 
-	importEntry.Status = jobs.ImportStatusMetadata
-	if err := w.db.Save(&importEntry).Error; err != nil {
+	if err := importEntry.SetStatus(w.db, jobs.ImportStatusMetadata); err != nil {
 		return fmt.Errorf("set import status: %v", err)
 	}
 

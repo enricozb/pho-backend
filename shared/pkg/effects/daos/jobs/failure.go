@@ -7,8 +7,7 @@ import (
 )
 
 func RecordJobFailure(db *gorm.DB, job Job, err error) error {
-	job.Status = JobStatusFailed
-	if err := db.Save(&job).Error; err != nil {
+	if err := db.Model(&Job{}).Where("id = ?", job.ID).Update("status", JobStatusFailed).Error; err != nil {
 		return fmt.Errorf("update job status: %v", err)
 	}
 

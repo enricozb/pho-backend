@@ -1,7 +1,5 @@
 package jobs
 
-import "gorm.io/gorm"
-
 type ImportStatus string
 type JobStatus string
 
@@ -22,8 +20,3 @@ const (
 	JobStatusDone       JobStatus = "DONE"
 	JobStatusFailed     JobStatus = "FAILED"
 )
-
-func GetJobStatus(db *gorm.DB, jobID JobID) (status JobStatus, err error) {
-	var job Job
-	return job.Status, db.Model(&job).Where("id = ?", jobID).Error
-}
