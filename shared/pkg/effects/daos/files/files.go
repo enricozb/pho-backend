@@ -21,7 +21,7 @@ type File struct {
 	ConvHash  []byte
 	LiveID    []byte
 
-	jobs.Import
+	Import jobs.Import
 }
 
 func (file *File) BeforeCreate(tx *gorm.DB) error {

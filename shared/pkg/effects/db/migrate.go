@@ -14,8 +14,10 @@ var Tables = []interface{}{
 	&jobs.Import{},
 	&jobs.ImportFailure{},
 
-	&paths.Path{},
 	&files.File{},
+	&paths.Path{},
+	&paths.PathMetadata{},
+
 	&albums.Album{},
 }
 

@@ -16,7 +16,7 @@ type Path struct {
 	ImportID uuid.UUID
 	Path     string
 
-	jobs.Import
+	Import jobs.Import
 }
 
 type PathMetadata struct {
@@ -26,7 +26,7 @@ type PathMetadata struct {
 	InitHash  []byte
 	LiveID    []byte
 
-	Path
+	Path Path
 }
 
 func (path *Path) BeforeCreate(tx *gorm.DB) error {
