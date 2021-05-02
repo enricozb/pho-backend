@@ -5,17 +5,16 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Masterminds/squirrel"
+	"gorm.io/gorm"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/db"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
 )
 
-func MockDB(t *testing.T) (mockDB *sqlx.DB, cleanup func()) {
-	assert := assert.New(t)
+func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {
+	assert := require.New(t)
 
 	tmpdir, err := ioutil.TempDir("", "pho-tests-")
 	assert.NoError(err, "create tempdir")
@@ -28,27 +27,29 @@ func MockDB(t *testing.T) (mockDB *sqlx.DB, cleanup func()) {
 	return mockDB, func() { os.RemoveAll(tmpdir) }
 }
 
-func MockImport(t *testing.T, db *sqlx.DB) jobs.ImportID {
+func MockImport(t *testing.T, db *gorm.DB) jobs.Import {
 	return MockImportWithOptions(t, db, jobs.ImportOptions{})
 }
 
-func MockImportWithOptions(t *testing.T, db *sqlx.DB, opts jobs.ImportOptions) jobs.ImportID {
-	importID, err := jobs.NewDao(db).NewImport(opts)
-	assert.NoError(t, err, "new import")
+func MockImportWithOptions(t *testing.T, db *gorm.DB, opts jobs.ImportOptions) jobs.Import {
+	assert := require.New(t)
+	importEntry := jobs.Import{Opts: opts}
+	assert.NoError(db.Create(&importEntry).Error)
 
-	return importID
+	return importEntry
+
 }
 
-func NumRows(t *testing.T, db *sqlx.DB, tableName string) (count int) {
-	assert := assert.New(t)
+// func NumRows(t *testing.T, db *sqlx.DB, tableName string) (count int) {
+// 	assert := assert.New(t)
 
-	q, args, err := squirrel.
-		Select("count(*)").
-		From(tableName).
-		ToSql()
+// 	q, args, err := squirrel.
+// 		Select("count(*)").
+// 		From(tableName).
+// 		ToSql()
 
-	assert.NoError(err, "build count query")
+// 	assert.NoError(err, "build count query")
 
-	assert.NoError(db.Get(&count, q, args...), "query count")
-	return count
-}
+// 	assert.NoError(db.Get(&count, q, args...), "query count")
+// 	return count
+// }

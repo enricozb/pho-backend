@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
 func TestWorkers_ScanWorker(t *testing.T) {
-	assert, db, dao, cleanup := setup(t)
+	assert, db, cleanup := setup(t)
 	defer cleanup()
 
 	cwd, err := os.Getwd()
@@ -19,18 +20,18 @@ func TestWorkers_ScanWorker(t *testing.T) {
 
 	opts := jobs.ImportOptions{Paths: []string{path.Join(cwd, ".fixtures")}}
 
-	importID := testutil.MockImportWithOptions(t, db, opts)
-	jobID, err := dao.PushJob(importID, jobs.JobScan)
+	importEntry := testutil.MockImportWithOptions(t, db, opts)
+	job, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
 	assert.NoError(err, "push job")
 
-	scanWorker := workers.NewScanWorker(dao)
-	assert.NoError(scanWorker.Work(jobID))
+	scanWorker := workers.NewScanWorker(db)
+	assert.NoError(scanWorker.Work(job))
 
-	paths, err := dao.Paths(importID)
-	assert.NoError(err, "paths")
+	var count int64
+	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
 
-	assert.Len(paths, 3)
+	assert.Equal(int64(3), count)
 
-	assertDidSetImportStatus(assert, dao, importID, jobs.ImportStatusScan)
-	assertDidEnqueueJob(assert, dao, importID, jobs.JobMetadata)
+	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusScan)
+	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadata)
 }

@@ -9,21 +9,21 @@ import (
 )
 
 func TestWorkers_MetadataWorker(t *testing.T) {
-	assert, db, dao, cleanup := setup(t)
+	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	importID := testutil.MockImport(t, db)
-	jobID, err := dao.PushJob(importID, jobs.JobMetadata)
+	importEntry := testutil.MockImport(t, db)
+	jobID, err := jobs.PushJob(db, importEntry.ID, jobs.JobMetadata)
 	assert.NoError(err, "push job")
 
-	metadataWorker := workers.NewMetadataWorker(dao)
+	metadataWorker := workers.NewMetadataWorker(db)
 	assert.NoError(metadataWorker.Work(jobID))
 
 	// Check that the monitor and all metadata jobs were enqueued.
-	assertDidEnqueueJob(assert, dao, importID, jobs.JobMetadataMonitor)
+	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadataMonitor)
 	for _, metadataJobKind := range jobs.MetadataJobKinds {
-		assertDidEnqueueJob(assert, dao, importID, metadataJobKind)
+		assertDidEnqueueJob(assert, db, importEntry.ID, metadataJobKind)
 	}
 
-	assertDidSetImportStatus(assert, dao, importID, jobs.ImportStatusMetadata)
+	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusMetadata)
 }
