@@ -17,14 +17,14 @@ func TestWorkers_TimestampWorker(t *testing.T) {
 
 	var count int64
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-	assert.Equal(int64(3), count)
+	assert.Equal(int64(4), count)
 
 	assert.NoError(db.Model(&paths.PathMetadata{}).Where("timestamp IS NULL").Count(&count).Error)
-	assert.Equal(int64(3), count)
+	assert.Equal(int64(4), count)
 
 	assert.NoError(workers.NewTimestampWorker(db).Work(metadataJobs[jobs.JobMetadataTimestamp]))
 
 	assert.NoError(db.Model(&paths.PathMetadata{}).Where("timestamp IS NOT NULL").Count(&count).Error)
-	assert.Equal(int64(3), count)
+	assert.Equal(int64(4), count)
 
 }

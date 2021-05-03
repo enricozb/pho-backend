@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -71,5 +72,5 @@ func computeTimestamp(path string) (int64, error) {
 		return fi.ModTime().UnixNano(), nil
 	}
 
-	return strconv.ParseInt(string(stdout), 10, 64)
+	return strconv.ParseInt(string(bytes.TrimSpace(stdout)), 10, 64)
 }
