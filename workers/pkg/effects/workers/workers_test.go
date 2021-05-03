@@ -13,7 +13,10 @@ import (
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
-const numFilesInFixture int64 = 4
+const (
+	numFilesInFixture       int64 = 5
+	numUniqueFilesInFixture int64 = 4
+)
 
 func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {
 	assert := require.New(t)
