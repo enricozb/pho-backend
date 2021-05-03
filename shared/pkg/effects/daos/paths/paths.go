@@ -13,7 +13,7 @@ import (
 
 type Path struct {
 	ID   uuid.UUID
-	Path string
+	Path string `gorm:"unique"`
 
 	// metadata
 	Kind      files.FileKind

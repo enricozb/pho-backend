@@ -6,6 +6,7 @@ import (
 
 	"github.com/karrick/godirwalk"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
@@ -38,7 +39,7 @@ func (w *scanWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("walk paths: %v", err)
 	}
 
-	if err := w.db.Create(&scannedPaths).Error; err != nil {
+	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&scannedPaths).Error; err != nil {
 		return fmt.Errorf("add paths: %v", err)
 	}
 
@@ -56,15 +57,15 @@ func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.
 			continue
 		}
 
-		if file.IsSupported(path) {
-			supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path})
+		if isSupported, kind := file.Kind(path); isSupported {
+			supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind})
 			continue
 		}
 
 		if file.IsDir(path) {
 			err := godirwalk.Walk(path, &godirwalk.Options{
 				Callback: func(path string, de *godirwalk.Dirent) error {
-					if file.IsSupported(path) {
+					if isSupported, _ := file.Kind(path); isSupported {
 						supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path})
 					}
 

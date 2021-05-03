@@ -1,16 +1,10 @@
 package file
 
-// SupportedMimeTypes is a set of strings of the supported mime types for imports.
-// This is exported as a map for fast lookup
-var SupportedMimeTypes = map[string]interface{}{}
+import "github.com/enricozb/pho/shared/pkg/effects/daos/files"
 
-var supportedMimeTypes = []string{
-	"image/png",
-	"image/jpeg",
-}
+// SupportedMimeTypes is a mapping of all supported mimetypes to their FileKind.
 
-func init() {
-	for _, mimetype := range supportedMimeTypes {
-		SupportedMimeTypes[mimetype] = nil
-	}
+var SupportedMimeTypes = map[string]files.FileKind{
+	"image/png":  files.ImageKind,
+	"image/jpeg": files.ImageKind,
 }
