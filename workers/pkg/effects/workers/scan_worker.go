@@ -33,12 +33,21 @@ func (w *scanWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("set import status: %v", err)
 	}
 
-	paths, err := w.walkPaths(importEntry)
+	scannedPaths, err := w.walkPaths(importEntry)
 	if err != nil {
 		return fmt.Errorf("walk paths: %v", err)
 	}
 
-	if err := w.db.Create(&paths).Error; err != nil {
+	if err := w.db.Create(&scannedPaths).Error; err != nil {
+		return fmt.Errorf("add paths: %v", err)
+	}
+
+	pathMetadatas := make([]paths.PathMetadata, len(scannedPaths))
+	for i := range pathMetadatas {
+		pathMetadatas[i].PathID = scannedPaths[i].ID
+	}
+
+	if err := w.db.Create(&pathMetadatas).Error; err != nil {
 		return fmt.Errorf("add paths: %v", err)
 	}
 
