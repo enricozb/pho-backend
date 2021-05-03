@@ -16,7 +16,6 @@ var Tables = []interface{}{
 
 	&files.File{},
 	&paths.Path{},
-	&paths.PathMetadata{},
 
 	&albums.Album{},
 }

@@ -38,7 +38,7 @@ func (w *hashWorker) Work(job jobs.Job) error {
 		if err != nil {
 			return fmt.Errorf("compute hash: %v", err)
 		}
-		if err := w.db.Model(&paths.PathMetadata{}).Where("path_id", path.ID).Update("init_hash", hash[:]).Error; err != nil {
+		if err := w.db.Model(&paths.Path{}).Where("id = ?", path.ID).Update("init_hash", hash[:]).Error; err != nil {
 			return fmt.Errorf("update init_hash: %v", err)
 		}
 	}

@@ -40,7 +40,7 @@ func (w *timestampWorker) Work(job jobs.Job) error {
 		if err != nil {
 			return fmt.Errorf("compute timestamp (%s): %v", path.Path, err)
 		}
-		if err := w.db.Model(&paths.PathMetadata{}).Where("path_id", path.ID).Update("timestamp", timestamp).Error; err != nil {
+		if err := w.db.Model(&paths.Path{}).Where("id = ?", path.ID).Update("timestamp", timestamp).Error; err != nil {
 			return fmt.Errorf("update timestamp: %v", err)
 		}
 	}

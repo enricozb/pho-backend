@@ -42,15 +42,6 @@ func (w *scanWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("add paths: %v", err)
 	}
 
-	pathMetadatas := make([]paths.PathMetadata, len(scannedPaths))
-	for i := range pathMetadatas {
-		pathMetadatas[i].PathID = scannedPaths[i].ID
-	}
-
-	if err := w.db.Create(&pathMetadatas).Error; err != nil {
-		return fmt.Errorf("add paths: %v", err)
-	}
-
 	if _, err := jobs.PushJob(w.db, importEntry.ID, jobs.JobMetadata); err != nil {
 		return fmt.Errorf("push job: %v", err)
 	}

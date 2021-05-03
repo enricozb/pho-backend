@@ -12,21 +12,17 @@ import (
 )
 
 type Path struct {
-	ID       uuid.UUID
-	ImportID uuid.UUID
-	Path     string
+	ID   uuid.UUID
+	Path string
 
-	Import jobs.Import
-}
-
-type PathMetadata struct {
-	PathID    uuid.UUID
+	// metadata
 	Kind      files.FileKind
 	Timestamp sql.NullTime
 	InitHash  []byte
 	LiveID    []byte
 
-	Path Path
+	ImportID uuid.UUID
+	Import   jobs.Import
 }
 
 func (path *Path) BeforeCreate(tx *gorm.DB) error {

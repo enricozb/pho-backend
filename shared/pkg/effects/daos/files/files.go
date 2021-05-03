@@ -17,8 +17,8 @@ type File struct {
 	ImportID  jobs.ImportID
 	Kind      FileKind
 	Timestamp time.Time
-	InitHash  []byte
-	ConvHash  []byte
+	InitHash  []byte `gorm:"unique"`
+	ConvHash  []byte `gorm:"unique"`
 	LiveID    []byte
 
 	Import jobs.Import
