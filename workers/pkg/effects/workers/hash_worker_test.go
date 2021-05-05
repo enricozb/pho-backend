@@ -12,7 +12,7 @@ func TestWorkers_HashWorker(t *testing.T) {
 	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	importEntry, metadataJob := runScanWorker(t, db)
+	importEntry, metadataJob := runScanWorker(t, db, ".fixtures")
 	metadataJobs, _ := runMetadataWorker(t, db, metadataJob)
 
 	var count int64

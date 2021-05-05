@@ -42,13 +42,13 @@ func assertDidNotEnqueueJob(assert *require.Assertions, db *gorm.DB, importID jo
 	assert.Equal(int64(0), count)
 }
 
-func runScanWorker(t *testing.T, db *gorm.DB) (importEntry jobs.Import, metadataJob jobs.Job) {
+func runScanWorker(t *testing.T, db *gorm.DB, inputPath string) (importEntry jobs.Import, metadataJob jobs.Job) {
 	assert := require.New(t)
 
 	cwd, err := os.Getwd()
 	assert.NoError(err, "getwd")
 
-	importEntry = testutil.MockImportWithOptions(t, db, jobs.ImportOptions{Paths: []string{path.Join(cwd, ".fixtures")}})
+	importEntry = testutil.MockImportWithOptions(t, db, jobs.ImportOptions{Paths: []string{path.Join(cwd, inputPath)}})
 	job, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
 	assert.NoError(err, "push job")
 
