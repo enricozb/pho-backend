@@ -76,3 +76,13 @@ func runMetadataWorker(t *testing.T, db *gorm.DB, metadataJob jobs.Job) (metadat
 
 	return metadataJobs, monitorJob
 }
+
+func runHashWorker(t *testing.T, db *gorm.DB, hashJob jobs.Job) {
+	assert := require.New(t)
+	assert.NoError(workers.NewHashWorker(db).Work(hashJob))
+}
+
+func runEXIFWorker(t *testing.T, db *gorm.DB, exifJob jobs.Job) {
+	assert := require.New(t)
+	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
+}
