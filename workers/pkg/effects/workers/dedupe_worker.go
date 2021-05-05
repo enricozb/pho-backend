@@ -1,9 +1,13 @@
 package workers
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
@@ -38,15 +42,26 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 
 	filesToImport := make([]files.File, len(pathsToImport))
 	for i, path := range pathsToImport {
-		if !path.Timestamp.Valid {
-			return fmt.Errorf("path without timestamp")
+		var exif EXIFData
+		if err := json.Unmarshal(path.EXIFMetadata, &exif); err != nil {
+			return fmt.Errorf("unmarshal: %v", err)
+		}
+
+		metadata, err := extractMetadata(exif)
+		if err != nil {
+			return fmt.Errorf("extract metadata: %v", err)
 		}
 
 		filesToImport[i].ID = path.ID
+		filesToImport[i].ImportID = path.ImportID
 		filesToImport[i].Kind = path.Kind
-		filesToImport[i].Timestamp = path.Timestamp.Time
+		filesToImport[i].Timestamp = metadata.timestamp
+		filesToImport[i].LiveID = metadata.liveID
 		filesToImport[i].InitHash = path.InitHash
-		filesToImport[i].LiveID = path.LiveID
+	}
+
+	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Save(&filesToImport).Error; err != nil {
+		return fmt.Errorf("insert files: %v", err)
 	}
 
 	if _, err := jobs.PushJob(w.db, importEntry.ID, jobs.JobConvert); err != nil {
@@ -54,4 +69,40 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 	}
 
 	return nil
+}
+
+type validatedEXIFMetadata struct {
+	timestamp time.Time
+	liveID    []byte
+}
+
+func extractMetadata(exif EXIFData) (validatedEXIFMetadata, error) {
+	var err error
+
+	timestamp := exif.CreateDate
+	if timestamp == 0 {
+		timestamp, err = fallbackCreateDate(exif.Path)
+		if err != nil {
+			return validatedEXIFMetadata{}, fmt.Errorf("fallback create date: %v", err)
+		}
+	}
+
+	liveID := exif.MediaGroupUUID
+	if liveID == "" {
+		liveID = exif.ContentIdentifier
+	}
+
+	return validatedEXIFMetadata{
+		timestamp: time.Unix(0, timestamp),
+		liveID:    []byte(liveID),
+	}, nil
+}
+
+func fallbackCreateDate(path string) (int64, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0, fmt.Errorf("stat: %v", err)
+	}
+
+	return fi.ModTime().UnixNano(), nil
 }
