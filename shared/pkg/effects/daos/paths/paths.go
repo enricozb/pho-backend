@@ -15,7 +15,10 @@ type Path struct {
 	ID   uuid.UUID
 	Path string `gorm:"unique"`
 
-	// metadata
+	// exif metadata (in json)
+	EXIFMetadata []byte
+
+	// extracted metadata
 	Kind      files.FileKind
 	Timestamp sql.NullTime
 	InitHash  []byte
