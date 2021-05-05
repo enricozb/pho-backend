@@ -52,21 +52,25 @@ func (w *scanWorker) Work(job jobs.Job) error {
 
 // walkPaths returns every supported path under `importEntry.Opts.Paths`.
 func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.Path, err error) {
+	computePath := func(path string) (bool, paths.Path) {
+		if isSupported, kind := file.Kind(path); isSupported {
+			return true, paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind}
+		}
+		return false, paths.Path{}
+	}
+
 	for _, path := range importEntry.Opts.Paths {
 		if !filepath.IsAbs(path) {
-			continue
-		}
-
-		if isSupported, kind := file.Kind(path); isSupported {
-			supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind})
 			continue
 		}
 
 		if file.IsDir(path) {
 			err := godirwalk.Walk(path, &godirwalk.Options{
 				Callback: func(path string, de *godirwalk.Dirent) error {
-					if isSupported, _ := file.Kind(path); isSupported {
-						supportedPaths = append(supportedPaths, paths.Path{ImportID: importEntry.ID, Path: path})
+					if !de.IsDir() {
+						if shouldAdd, pathEntry := computePath(path); shouldAdd {
+							supportedPaths = append(supportedPaths, pathEntry)
+						}
 					}
 
 					return nil
@@ -77,6 +81,8 @@ func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.
 			if err != nil {
 				return nil, fmt.Errorf("walk '%s': %v", path, err)
 			}
+		} else if shouldAdd, pathEntry := computePath(path); shouldAdd {
+			supportedPaths = append(supportedPaths, pathEntry)
 		}
 	}
 
