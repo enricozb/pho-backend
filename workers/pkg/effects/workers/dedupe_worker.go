@@ -79,8 +79,8 @@ type validatedEXIFMetadata struct {
 func extractMetadata(exif EXIFData) (validatedEXIFMetadata, error) {
 	var err error
 
-	timestamp := exif.CreateDate
-	if timestamp == 0 {
+	timestamp := time.Unix(exif.CreateDate, 0)
+	if exif.CreateDate == 0 {
 		timestamp, err = fallbackCreateDate(exif.Path)
 		if err != nil {
 			return validatedEXIFMetadata{}, fmt.Errorf("fallback create date: %v", err)
@@ -93,16 +93,16 @@ func extractMetadata(exif EXIFData) (validatedEXIFMetadata, error) {
 	}
 
 	return validatedEXIFMetadata{
-		timestamp: time.Unix(0, timestamp),
+		timestamp: timestamp,
 		liveID:    []byte(liveID),
 	}, nil
 }
 
-func fallbackCreateDate(path string) (int64, error) {
+func fallbackCreateDate(path string) (time.Time, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
-		return 0, fmt.Errorf("stat: %v", err)
+		return time.Time{}, fmt.Errorf("stat: %v", err)
 	}
 
-	return fi.ModTime().UnixNano(), nil
+	return fi.ModTime(), nil
 }
