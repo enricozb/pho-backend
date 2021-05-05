@@ -8,22 +8,23 @@ import (
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
-func TestWorkers_TimestampWorker(t *testing.T) {
+func TestWorkers_EXIFWorker(t *testing.T) {
 	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	importEntry, metadataJob := runScanWorker(t, db, ".fixtures")
-	metadataJobs, _ := runMetadataWorker(t, db, metadataJob)
+	importEntry, _ := runScanWorker(t, db, ".fixtures")
+	exifJob, err := jobs.PushJob(db, importEntry.ID, jobs.JobMetadataEXIF)
+	assert.NoError(err)
 
 	var count int64
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
 	assert.Equal(numFilesInFixture, count)
 
-	assert.NoError(db.Model(&paths.Path{}).Where("timestamp IS NULL").Count(&count).Error)
+	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata IS NULL").Count(&count).Error)
 	assert.Equal(numFilesInFixture, count)
 
-	assert.NoError(workers.NewTimestampWorker(db).Work(metadataJobs[jobs.JobMetadataTimestamp]))
+	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
 
-	assert.NoError(db.Model(&paths.Path{}).Where("timestamp IS NOT NULL").Count(&count).Error)
+	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata IS NOT NULL").Count(&count).Error)
 	assert.Equal(numFilesInFixture, count)
 }

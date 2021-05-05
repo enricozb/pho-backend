@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	numFilesInFixture       int64 = 5
-	numUniqueFilesInFixture int64 = 4
+	numFilesInFixture       int64 = 7
+	numUniqueFilesInFixture int64 = 6
 )
 
 func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {
@@ -75,4 +75,14 @@ func runMetadataWorker(t *testing.T, db *gorm.DB, metadataJob jobs.Job) (metadat
 	assert.NoError(db.Where("import_id = ? AND kind = ?", metadataJob.ImportID, jobs.JobMetadataMonitor).Find(&monitorJob).Error)
 
 	return metadataJobs, monitorJob
+}
+
+func runHashWorker(t *testing.T, db *gorm.DB, hashJob jobs.Job) {
+	assert := require.New(t)
+	assert.NoError(workers.NewHashWorker(db).Work(hashJob))
+}
+
+func runEXIFWorker(t *testing.T, db *gorm.DB, exifJob jobs.Job) {
+	assert := require.New(t)
+	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
 }
