@@ -59,7 +59,7 @@ func computeTimestamp(path string) (int64, error) {
 
 	stdout, err := cmd.Output()
 	if err != nil {
-		return 0, fmt.Errorf("stdout pipe: %v", err)
+		return 0, fmt.Errorf("run cmd: %v", err)
 	}
 
 	// fallback to stat timestamp
