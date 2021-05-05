@@ -1,7 +1,6 @@
 package paths
 
 import (
-	"database/sql"
 	"errors"
 
 	"github.com/google/uuid"
@@ -15,14 +14,12 @@ type Path struct {
 	ID   uuid.UUID
 	Path string `gorm:"unique"`
 
-	// exif metadata (in json)
+	// exif metadata in json
 	EXIFMetadata []byte
 
-	// extracted metadata
-	Kind      files.FileKind
-	Timestamp sql.NullTime
-	InitHash  []byte
-	LiveID    []byte
+	// non-exif metadata
+	Kind     files.FileKind
+	InitHash []byte
 
 	ImportID uuid.UUID
 	Import   jobs.Import
