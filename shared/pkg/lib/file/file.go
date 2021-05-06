@@ -18,13 +18,13 @@ func IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
-// Kind returns whether or not the file is of a supported format. If any error occurs, Kind returns false.
-func Kind(path string) (bool, files.FileKind) {
-	mime, err := mimetype.DetectFile(path)
+// Kind returns whether or not the file is of a supported format, the kind of the file, and the mimetype as a string. If any error occurs, `ok` is false.
+func Kind(path string) (ok bool, kind files.FileKind, mime string) {
+	mimeinfo, err := mimetype.DetectFile(path)
 	if err != nil {
-		return false, ""
+		return false, "", ""
 	}
 
-	kind, ok := SupportedMimeTypes[mime.String()]
-	return ok, kind
+	kind, ok = SupportedMimeTypes[mimeinfo.String()]
+	return ok, kind, mimeinfo.String()
 }

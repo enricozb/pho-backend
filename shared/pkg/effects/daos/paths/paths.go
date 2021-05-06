@@ -19,6 +19,7 @@ type Path struct {
 
 	// non-exif metadata
 	Kind     files.FileKind
+	Mimetype string
 	InitHash []byte
 
 	ImportID uuid.UUID

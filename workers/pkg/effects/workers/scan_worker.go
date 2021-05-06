@@ -53,8 +53,8 @@ func (w *scanWorker) Work(job jobs.Job) error {
 // walkPaths returns every supported path under `importEntry.Opts.Paths`.
 func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.Path, err error) {
 	computePath := func(path string) (bool, paths.Path) {
-		if isSupported, kind := file.Kind(path); isSupported {
-			return true, paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind}
+		if isSupported, kind, mimetype := file.Kind(path); isSupported {
+			return true, paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind, Mimetype: mimetype}
 		}
 		return false, paths.Path{}
 	}
