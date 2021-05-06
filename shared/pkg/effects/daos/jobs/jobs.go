@@ -14,11 +14,11 @@ type JobID = uuid.UUID
 type Job struct {
 	ID        JobID
 	Status    JobStatus `gorm:"default:'NOT_STARTED'"`
-	Kind      JobKind
-	Args      []byte `gorm:"default:'{}'"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	ImportID  ImportID
+	Kind      JobKind   `gorm:"not null"`
+	Args      []byte    `gorm:"default:'{}'"`
+	CreatedAt time.Time `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null"`
+	ImportID  ImportID  `gorm:"not null"`
 
 	Import Import
 }

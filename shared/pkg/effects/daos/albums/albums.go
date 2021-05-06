@@ -11,7 +11,7 @@ type AlbumID = uuid.UUID
 
 type Album struct {
 	ID   AlbumID
-	Name string
+	Name string `gorm:"not null"`
 
 	ParentAlbumID *AlbumID
 	ChildAlbums   []*Album     `gorm:"foreignKey:ParentAlbumID"`

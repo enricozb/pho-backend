@@ -16,12 +16,11 @@ type Import struct {
 	ID        ImportID      `gorm:"type:uuid"`
 	Opts      ImportOptions `gorm:"-"`
 	Status    ImportStatus  `gorm:"default:'NOT_STARTED'"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time     `gorm:"not null"`
+	UpdatedAt time.Time     `gorm:"not null"`
 
-	// OptsJSON should not be set manually, it is used as an intermediate
-	// between gorm and unmarshaling to Import.Opts.
-	OptsJSON []byte `gorm:"column:opts"`
+	// OptsJSON should not be set manually, it is used as an intermediate between gorm and unmarshaling to Import.Opts.
+	OptsJSON []byte `gorm:"column:opts;not null"`
 }
 
 type ImportOptions struct {

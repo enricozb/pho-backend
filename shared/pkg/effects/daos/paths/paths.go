@@ -12,7 +12,7 @@ import (
 
 type Path struct {
 	ID   uuid.UUID
-	Path string `gorm:"unique"`
+	Path string `gorm:"unique; not null"`
 
 	// exif metadata in json
 	EXIFMetadata []byte
