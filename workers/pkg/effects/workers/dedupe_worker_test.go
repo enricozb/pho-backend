@@ -3,8 +3,11 @@ package workers_test
 import (
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
@@ -18,12 +21,30 @@ func TestWorkers_DedupeWorker(t *testing.T) {
 	runHashWorker(t, db, metadataJobs[jobs.JobMetadataHash])
 	runEXIFWorker(t, db, metadataJobs[jobs.JobMetadataEXIF])
 
-	var count int64
-	assert.NoError(db.Model(&files.File{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-	assert.Equal(int64(0), count)
+	var files []files.File
+	var paths []paths.Path
+
+	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&files).Error)
+	assert.Len(files, 0)
 
 	assert.NoError(workers.NewDedupeWorker(db).Work(metadataJobs[jobs.JobMetadataHash]))
 
-	assert.NoError(db.Model(&files.File{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-	assert.Equal(numUniqueFilesInFixture, count)
+	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&files).Error)
+	assert.Len(files, int(numUniqueFilesInFixture))
+
+	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&paths).Error)
+	assert.Len(paths, int(numFilesInFixture))
+
+	pathIDs := make([]uuid.UUID, len(paths))
+	fileIDs := make([]uuid.UUID, len(files))
+
+	for i, path := range paths {
+		pathIDs[i] = path.ID
+	}
+
+	for i, file := range files {
+		fileIDs[i] = file.ID
+	}
+
+	assert.Subset(pathIDs, fileIDs)
 }

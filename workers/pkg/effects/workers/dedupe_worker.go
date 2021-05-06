@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gorm.io/gorm"
@@ -54,6 +55,7 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 
 		filesToImport[i].ID = path.ID
 		filesToImport[i].ImportID = path.ImportID
+		filesToImport[i].Extension = filepath.Ext(path.Path)
 		filesToImport[i].Kind = path.Kind
 		filesToImport[i].Timestamp = metadata.timestamp
 		filesToImport[i].LiveID = metadata.liveID

@@ -19,6 +19,9 @@ type Album struct {
 }
 
 func (a *Album) BeforeCreate(tx *gorm.DB) error {
-	a.ID = uuid.New()
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
+	}
+
 	return nil
 }

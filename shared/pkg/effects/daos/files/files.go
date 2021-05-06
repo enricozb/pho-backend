@@ -15,6 +15,7 @@ type FileID = uuid.UUID
 type File struct {
 	ID        FileID
 	ImportID  jobs.ImportID
+	Extension string
 	Kind      FileKind
 	Timestamp time.Time
 	InitHash  []byte `gorm:"unique"`
@@ -25,7 +26,9 @@ type File struct {
 }
 
 func (file *File) BeforeCreate(tx *gorm.DB) error {
-	file.ID = uuid.New()
+	if file.ID == uuid.Nil {
+		file.ID = uuid.New()
+	}
 
 	if file.Kind == "" {
 		return errors.New("File.Kind is required")

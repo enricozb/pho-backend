@@ -24,7 +24,9 @@ type Job struct {
 }
 
 func (job *Job) BeforeCreate(tx *gorm.DB) error {
-	job.ID = uuid.New()
+	if job.ID == uuid.Nil {
+		job.ID = uuid.New()
+	}
 
 	if job.Kind == "" {
 		return errors.New("Job.Kind is required")

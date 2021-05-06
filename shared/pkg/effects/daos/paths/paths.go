@@ -27,7 +27,9 @@ type Path struct {
 }
 
 func (path *Path) BeforeCreate(tx *gorm.DB) error {
-	path.ID = uuid.New()
+	if path.ID == uuid.Nil {
+		path.ID = uuid.New()
+	}
 
 	if path.Path == "" {
 		return errors.New("Path.Path is required")

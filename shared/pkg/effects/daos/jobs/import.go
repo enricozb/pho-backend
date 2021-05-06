@@ -37,7 +37,9 @@ type ImportFailure struct {
 }
 
 func (i *Import) BeforeCreate(tx *gorm.DB) error {
-	i.ID = uuid.New()
+	if i.ID == uuid.Nil {
+		i.ID = uuid.New()
+	}
 
 	if len(i.OptsJSON) != 0 {
 		return errors.New("Import.OptsJSON should not be set manually")
