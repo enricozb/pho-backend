@@ -20,11 +20,11 @@ func TestWorkers_EXIFWorker(t *testing.T) {
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
 	assert.Equal(numFilesInFixture, count)
 
-	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata IS NULL").Count(&count).Error)
+	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata = '{}'").Count(&count).Error)
 	assert.Equal(numFilesInFixture, count)
 
 	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
 
-	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata IS NOT NULL").Count(&count).Error)
+	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata != '{}'").Count(&count).Error)
 	assert.Equal(numFilesInFixture, count)
 }

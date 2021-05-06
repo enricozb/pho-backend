@@ -1,7 +1,9 @@
 package paths
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,8 +16,9 @@ type Path struct {
 	ID   uuid.UUID
 	Path string `gorm:"unique; not null"`
 
-	// exif metadata in json
-	EXIFMetadata []byte
+	// auto-unmarshall into EXIFMetadata from EXIFMetadataJSON when fetching
+	EXIFMetadata     EXIFMetadata `gorm:"-"`
+	EXIFMetadataJSON []byte       `gorm:"column:exif_metadata"`
 
 	// non-exif metadata
 	Kind     files.FileKind
@@ -26,14 +29,40 @@ type Path struct {
 	Import   jobs.Import
 }
 
-func (path *Path) BeforeCreate(tx *gorm.DB) error {
-	if path.ID == uuid.Nil {
-		path.ID = uuid.New()
+func (p *Path) BeforeSave(tx *gorm.DB) (err error) {
+	if len(p.EXIFMetadataJSON) != 0 {
+		return errors.New("Path.EXIFMetadataJSON should not be set manually")
 	}
 
-	if path.Path == "" {
-		return errors.New("Path.Path is required")
+	if p.EXIFMetadata.Path == "" {
+		p.EXIFMetadataJSON = []byte("{}")
+	} else if p.EXIFMetadataJSON, err = json.Marshal(p.EXIFMetadata); err != nil {
+		return fmt.Errorf("marshal: %v", err)
 	}
+
+	return nil
+}
+
+func (p *Path) BeforeCreate(tx *gorm.DB) error {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+
+	return nil
+}
+
+// AfterFind unmarshals Path.EXIFMetadataJSON into Path.EXIFMetadata.
+func (p *Path) AfterFind(tx *gorm.DB) error {
+	// clear EXIFMetadataJSON so it cannot be read after a find, it will be re-marshaled on save
+	exifMetadataJSON := p.EXIFMetadataJSON
+	p.EXIFMetadataJSON = []byte("")
+
+	return json.Unmarshal(exifMetadataJSON, &p.EXIFMetadata)
+}
+
+func (p *Path) AfterSave(tx *gorm.DB) (err error) {
+	// clear EXIFMetadataJSON so it cannot be read after saving
+	p.EXIFMetadataJSON = []byte("")
 
 	return nil
 }

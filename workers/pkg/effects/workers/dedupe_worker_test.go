@@ -12,8 +12,8 @@ import (
 )
 
 func TestWorkers_DedupeWorker(t *testing.T) {
-	assert, db, _ := setup(t)
-	// defer cleanup()
+	assert, db, cleanup := setup(t)
+	defer cleanup()
 
 	importEntry, metadataJob := runScanWorker(t, db, ".fixtures")
 	metadataJobs, _ := runMetadataWorker(t, db, metadataJob)

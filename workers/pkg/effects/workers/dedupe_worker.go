@@ -1,7 +1,6 @@
 package workers
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -43,12 +42,7 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 
 	filesToImport := make([]files.File, len(pathsToImport))
 	for i, path := range pathsToImport {
-		var exif EXIFData
-		if err := json.Unmarshal(path.EXIFMetadata, &exif); err != nil {
-			return fmt.Errorf("unmarshal: %v", err)
-		}
-
-		metadata, err := extractMetadata(exif)
+		metadata, err := extractMetadata(path.EXIFMetadata)
 		if err != nil {
 			return fmt.Errorf("extract metadata: %v", err)
 		}
@@ -78,7 +72,7 @@ type validatedEXIFMetadata struct {
 	liveID    []byte
 }
 
-func extractMetadata(exif EXIFData) (validatedEXIFMetadata, error) {
+func extractMetadata(exif paths.EXIFMetadata) (validatedEXIFMetadata, error) {
 	var err error
 
 	timestamp := time.Unix(exif.CreateDate, 0)

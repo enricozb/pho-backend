@@ -35,27 +35,40 @@ type ImportFailure struct {
 	Import Import
 }
 
-func (i *Import) BeforeCreate(tx *gorm.DB) error {
-	if i.ID == uuid.Nil {
-		i.ID = uuid.New()
-	}
-
+func (i *Import) BeforeSave(tx *gorm.DB) (err error) {
 	if len(i.OptsJSON) != 0 {
 		return errors.New("Import.OptsJSON should not be set manually")
 	}
 
-	bytes, err := json.Marshal(i.Opts)
-	if err != nil {
-		return fmt.Errorf("marshall: %v", err)
+	if i.OptsJSON, err = json.Marshal(i.Opts); err != nil {
+		return fmt.Errorf("marshal: %v", err)
 	}
 
-	i.OptsJSON = bytes
+	return nil
+}
+
+func (i *Import) BeforeCreate(tx *gorm.DB) (err error) {
+	if i.ID == uuid.Nil {
+		i.ID = uuid.New()
+	}
+
 	return nil
 }
 
 // AfterFind unmarshals Import.OptsJSON into Import.Opts.
 func (i *Import) AfterFind(tx *gorm.DB) error {
-	return json.Unmarshal(i.OptsJSON, &i.Opts)
+	// clear OptsJSON so it cannot be read after a find, it will be re-marshaled on save
+	optsJSON := i.OptsJSON
+	i.OptsJSON = []byte("")
+
+	return json.Unmarshal(optsJSON, &i.Opts)
+}
+
+func (i *Import) AfterSave(tx *gorm.DB) error {
+	// clear OptsJSON so it cannot be read after saving
+	i.OptsJSON = []byte("")
+
+	return nil
 }
 
 func (i *Import) SetStatus(db *gorm.DB, status ImportStatus) error {

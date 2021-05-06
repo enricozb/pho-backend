@@ -14,14 +14,6 @@ import (
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
-type EXIFData struct {
-	Path              string `json:"SourceFile"`
-	CreateDate        int64  `json:"CreateDate"`
-	MediaGroupUUID    string `json:"MediaGroupUUID"`
-	ImageUniqueID     string `json:"ImageUniqueID"`
-	ContentIdentifier string `json:"ContentIdentifier"`
-}
-
 type exifWorker struct {
 	db *gorm.DB
 }
@@ -43,33 +35,25 @@ func (w *exifWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("get paths: %v", err)
 	}
 
-	// maps file path to path uuids
-	pathIDs := map[string]string{}
-	var osPaths []string
+	// grab exif data
+	var filepaths []string
 	for _, path := range pathEntries {
-		osPaths = append(osPaths, path.Path)
-		pathIDs[path.Path] = path.ID.String()
+		filepaths = append(filepaths, path.Path)
 	}
 
-	// grab exif data
-	exifData, err := getEXIFData(importEntry.ID, osPaths)
+	exifData, err := getEXIFData(importEntry.ID, filepaths)
 	if err != nil {
 		return fmt.Errorf("get exif data: %v", err)
 	}
 
-	// insert exif data into `paths` table
-	for _, exif := range exifData {
-		pathID, ok := pathIDs[exif.Path]
+	for _, path := range pathEntries {
+		exif, ok := exifData[path.Path]
 		if !ok {
-			return fmt.Errorf("got exif data for non-existing path: %s", exif.Path)
+			return fmt.Errorf("missing exif data from path: %s", path.Path)
 		}
 
-		exifJSON, err := json.Marshal(exif)
-		if err != nil {
-			return fmt.Errorf("marshal: %v", err)
-		}
-
-		if err := w.db.Model(&paths.Path{}).Where("id = ?", pathID).Update("exif_metadata", exifJSON).Error; err != nil {
+		path.EXIFMetadata = exif
+		if err := w.db.Save(&path).Error; err != nil {
 			return fmt.Errorf("update: %v", err)
 		}
 	}
@@ -77,10 +61,11 @@ func (w *exifWorker) Work(job jobs.Job) error {
 	return nil
 }
 
-func getEXIFData(importID jobs.ImportID, paths []string) (exifData []EXIFData, err error) {
+// getEXIFData returns `EXIFMetadata` for each of path in `paths`, returning a mapping from `path.Path` to `EXIFMetadata`.
+func getEXIFData(importID jobs.ImportID, filepaths []string) (map[string]paths.EXIFMetadata, error) {
 	// write file paths to temporary file
 	tmp, err := ioutil.TempFile("", "pho-import-files-"+importID.String())
-	for _, path := range paths {
+	for _, path := range filepaths {
 		tmp.Write(append([]byte(path), '\n'))
 	}
 	tmp.Close()
@@ -102,5 +87,15 @@ func getEXIFData(importID jobs.ImportID, paths []string) (exifData []EXIFData, e
 		return nil, fmt.Errorf("run exiftool: %v", err)
 	}
 
-	return exifData, json.Unmarshal(data, &exifData)
+	var exifMetadatas []paths.EXIFMetadata
+	if err := json.Unmarshal(data, &exifMetadatas); err != nil {
+		return nil, fmt.Errorf("unmarshal: %v", err)
+	}
+
+	exifMap := map[string]paths.EXIFMetadata{}
+	for _, exif := range exifMetadatas {
+		exifMap[exif.Path] = exif
+	}
+
+	return exifMap, nil
 }
