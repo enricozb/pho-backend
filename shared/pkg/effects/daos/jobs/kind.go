@@ -22,3 +22,8 @@ var MetadataJobKinds = []JobKind{
 	JobMetadataHash,
 	JobMetadataEXIF,
 }
+
+var ConvertJobKinds = []JobKind{
+	JobConvertVideo,
+	JobConvertImage,
+}
