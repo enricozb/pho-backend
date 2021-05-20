@@ -2,12 +2,15 @@ package converter
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/enricozb/pho/shared/pkg/effects/copyfile"
 )
 
+// identityConverter copies from src to dst, and does no conversion between media formats.
 type identityConverter struct {
 	ctx context.Context
 	g   *errgroup.Group
@@ -24,6 +27,7 @@ func newIdentityConverter() converter {
 }
 
 func (c *identityConverter) Convert(src, dst string) error {
+	dst = dst + strings.ToUpper(filepath.Ext(src))
 	c.g.Go(func() error { return copyfile.CopyFile(src, dst) })
 
 	return nil

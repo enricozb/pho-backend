@@ -18,6 +18,7 @@ func newHEICConverter() converter {
 }
 
 func (c *heicConverter) Convert(src, dst string) error {
+	dst = dst + ".JPG"
 	c.p.Go(func() error { return heic.Convert(src, dst) })
 
 	return nil
