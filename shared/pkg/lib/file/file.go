@@ -25,6 +25,6 @@ func Kind(path string) (ok bool, kind files.FileKind, mime string) {
 		return false, "", ""
 	}
 
-	kind, ok = SupportedMimeTypes[mimeinfo.String()]
+	kind, ok = SupportedMimeTypeKinds[mimeinfo.String()]
 	return ok, kind, mimeinfo.String()
 }

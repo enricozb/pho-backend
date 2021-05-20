@@ -9,9 +9,11 @@ type heicConverter struct {
 	p pool.Pool
 }
 
-var _ Converter = &heicConverter{}
+func init() {
+	registerConverter("image/heic", newHEICConverter)
+}
 
-func newHEICConverter() *heicConverter {
+func newHEICConverter() Converter {
 	return &heicConverter{pool.NewPool(32)}
 }
 

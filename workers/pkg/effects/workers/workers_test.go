@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	numFilesInFixture       int64 = 7
-	numUniqueFilesInFixture int64 = 6
+	numFilesInFixture       int64 = 6
+	numUniqueFilesInFixture int64 = 5
 )
 
 func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {

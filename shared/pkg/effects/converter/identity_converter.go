@@ -13,9 +13,12 @@ type identityConverter struct {
 	g   *errgroup.Group
 }
 
-var _ Converter = &identityConverter{}
+func init() {
+	registerConverter("image/png", newHEICConverter)
+	registerConverter("image/jpeg", newHEICConverter)
+}
 
-func newIdentityConverter() *identityConverter {
+func newIdentityConverter() Converter {
 	g, ctx := errgroup.WithContext(context.Background())
 	return &identityConverter{ctx: ctx, g: g}
 }
