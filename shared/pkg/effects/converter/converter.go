@@ -2,24 +2,60 @@ package converter
 
 import "fmt"
 
-type Converter interface {
-	// Convert copies src to dst, converting if necessary.
-	// This call alone might not do any copying, however after Finish is called this conversion will have completed.
+// SupportedMimeTypes is the list of all mimetypes that can be converted.
+var SupportedMimeTypes []string
+
+// MediaConverter is the exported converter that can convert any mimetype in `SupportedMimeTypes`.
+type MediaConverter struct {
+	converters map[string]converter
+}
+
+// converter describes the behavior of all converters (HEIC, quicktime, etc).
+type converter interface {
+	// Convert copies `src` to `dst`, converting between the two files if necessary.
+	// `dst` may not yet exist after this function exits.
 	Convert(src, dst string) error
 
 	// Complete any remaining conversion tasks, blocking until all are done.
 	Finish() error
 }
 
-var SupportedMimeTypes []string
+var converters = map[string]func() converter{}
 
-var converters = map[string]func() Converter{}
-
-func registerConverter(mimetype string, c func() Converter) {
+// registerConverter registers a converter for a specific mimetype.
+func registerConverter(mimetype string, c func() converter) {
 	if _, alreadyRegistered := converters[mimetype]; alreadyRegistered {
 		panic(fmt.Sprintf("converter already exists for mimetype %s", mimetype))
 	}
 	converters[mimetype] = c
 
 	SupportedMimeTypes = append(SupportedMimeTypes, mimetype)
+}
+
+func NewMediaConverter() *MediaConverter {
+	m := &MediaConverter{}
+	for mimetype, c := range converters {
+		m.converters[mimetype] = c()
+	}
+
+	return m
+}
+
+func (m *MediaConverter) Convert(src, dst, srcMimeType string) error {
+	c, converterExists := m.converters[srcMimeType]
+	if !converterExists {
+		return fmt.Errorf("mimetype not supported: %s", srcMimeType)
+	}
+
+	return c.Convert(src, dst)
+}
+
+func (m *MediaConverter) Finish() error {
+	for mimetype, c := range m.converters {
+		if err := c.Finish(); err != nil {
+			return fmt.Errorf("finish on converter for mimetype %s: %v", mimetype, err)
+		}
+	}
+
+	return nil
 }

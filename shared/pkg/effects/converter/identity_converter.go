@@ -18,7 +18,7 @@ func init() {
 	registerConverter("image/jpeg", newHEICConverter)
 }
 
-func newIdentityConverter() Converter {
+func newIdentityConverter() converter {
 	g, ctx := errgroup.WithContext(context.Background())
 	return &identityConverter{ctx: ctx, g: g}
 }

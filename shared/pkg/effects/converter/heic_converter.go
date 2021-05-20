@@ -13,7 +13,7 @@ func init() {
 	registerConverter("image/heic", newHEICConverter)
 }
 
-func newHEICConverter() Converter {
+func newHEICConverter() converter {
 	return &heicConverter{pool.NewPool(32)}
 }
 
