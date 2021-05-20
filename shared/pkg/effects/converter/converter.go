@@ -25,7 +25,7 @@ var converters = map[string]func() converter{}
 // registerConverter registers a converter for a specific mimetype.
 func registerConverter(mimetype string, c func() converter) {
 	if _, alreadyRegistered := converters[mimetype]; alreadyRegistered {
-		panic(fmt.Sprintf("converter already exists for mimetype %s", mimetype))
+		panic(fmt.Errorf("converter already exists for mimetype %s", mimetype))
 	}
 	converters[mimetype] = c
 
