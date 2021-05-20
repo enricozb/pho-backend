@@ -15,7 +15,7 @@ type identityConverter struct {
 
 var _ Converter = &identityConverter{}
 
-func NewIdentityConverter() *identityConverter {
+func newIdentityConverter() *identityConverter {
 	g, ctx := errgroup.WithContext(context.Background())
 	return &identityConverter{ctx: ctx, g: g}
 }
