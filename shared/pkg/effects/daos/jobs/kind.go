@@ -12,18 +12,10 @@ const (
 	JobMetadataMonitor   JobKind = "METADATA_MONITOR"
 	JobDedupe            JobKind = "DEDUPE"
 	JobConvert           JobKind = "CONVERT"
-	JobConvertVideo      JobKind = "CONVERT_VIDEO"
-	JobConvertImage      JobKind = "CONVERT_IMAGE"
-	JobConvertMonitor    JobKind = "CONVERT_MONITOR"
 	JobCleanup           JobKind = "CLEANUP"
 )
 
 var MetadataJobKinds = []JobKind{
 	JobMetadataHash,
 	JobMetadataEXIF,
-}
-
-var ConvertJobKinds = []JobKind{
-	JobConvertVideo,
-	JobConvertImage,
 }

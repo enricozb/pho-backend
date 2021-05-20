@@ -2,24 +2,29 @@ package workers
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"gorm.io/gorm"
 
+	"github.com/enricozb/pho/shared/pkg/effects/config"
+	"github.com/enricozb/pho/shared/pkg/effects/converter"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
-type convertWorker struct {
+type ConvertWorker struct {
 	db *gorm.DB
 }
 
-var _ worker.Worker = &convertWorker{}
+var _ worker.Worker = &ConvertWorker{}
 
-func NewConvertWorker(db *gorm.DB) *convertWorker {
-	return &convertWorker{db: db}
+func NewConvertWorker(db *gorm.DB) *ConvertWorker {
+	return &ConvertWorker{db: db}
 }
 
-func (w *convertWorker) Work(job jobs.Job) error {
+func (w *ConvertWorker) Work(job jobs.Job) error {
 	importEntry := jobs.Import{}
 	if err := w.db.Find(&importEntry, job.ImportID).Error; err != nil {
 		return fmt.Errorf("find import: %v", err)
@@ -29,19 +34,35 @@ func (w *convertWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("set import status: %v", err)
 	}
 
-	jobIDs := []jobs.JobID{}
+	var filesToImport []files.File
+	if err := w.db.Where("import_id = ? AND kind = ?", importEntry.ID, files.ImageKind).Find(&filesToImport).Error; err != nil {
+		return fmt.Errorf("get image files: %v", err)
+	}
 
-	for _, convertJobKind := range jobs.ConvertJobKinds {
-		if job, err := jobs.PushJob(w.db, importEntry.ID, convertJobKind); err != nil {
-			return fmt.Errorf("push job (%s): %v", convertJobKind, err)
-		} else {
-			jobIDs = append(jobIDs, job.ID)
+	// convert the files
+	converter := converter.NewMediaConverter()
+
+	for _, file := range filesToImport {
+		var path paths.Path
+		if err := w.db.Where("id = ?", file.ID).Find(&path).Error; err != nil {
+			return fmt.Errorf("get path: %v", err)
+		}
+
+		src := path.Path
+		dst := destPath(file)
+		if err := converter.Convert(src, dst, path.Mimetype); err != nil {
+			return fmt.Errorf("convert: %v", err)
 		}
 	}
 
-	if _, err := jobs.PushJobWithArgs(w.db, importEntry.ID, jobs.JobConvertMonitor, MonitorWorkerArgs{JobIDs: jobIDs}); err != nil {
-		return fmt.Errorf("push monitor job: %v", err)
+	if err := converter.Finish(); err != nil {
+		return fmt.Errorf("finish: %v", err)
 	}
 
 	return nil
+}
+
+// destPath returns the destination path after conversion for a file, _without the new extension_.
+func destPath(file files.File) string {
+	return filepath.Join(config.Config.DataPath, file.ID.String())
 }
