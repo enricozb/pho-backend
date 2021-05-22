@@ -11,6 +11,7 @@ require (
 	github.com/karrick/godirwalk v1.16.1
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect

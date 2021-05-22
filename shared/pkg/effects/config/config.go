@@ -4,7 +4,9 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"os"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
@@ -37,4 +39,25 @@ func init() {
 	if err := Config.Unmarshal(&Config); err != nil {
 		panic(fmt.Errorf("unmarshal config: %v", err))
 	}
+
+	Config.DataPath, err = homedir.Expand(Config.DataPath)
+	if err != nil {
+		panic(fmt.Errorf("expand: %v", err))
+	}
+
+	if err := initDataPath(); err != nil {
+		panic(fmt.Errorf("init data path: %v", err))
+	}
+}
+
+func initDataPath() error {
+	if _, err := os.Stat(Config.DataPath); os.IsNotExist(err) {
+		if err := os.Mkdir(Config.DataPath, 0755); err != nil {
+			return fmt.Errorf("mkdir: %v", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("stat: %v", err)
+	}
+
+	return nil
 }
