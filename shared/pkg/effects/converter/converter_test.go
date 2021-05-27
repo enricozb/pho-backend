@@ -22,6 +22,8 @@ func TestMediaConverter_Smoke(t *testing.T) {
 	// convert the files
 	converter := converter.NewMediaConverter()
 
+	var supportedCount int64
+
 	err = filepath.WalkDir(testutil.MediaFixturesPath, func(path string, info fs.DirEntry, err error) error {
 		if info.IsDir() {
 			return nil
@@ -35,6 +37,7 @@ func TestMediaConverter_Smoke(t *testing.T) {
 		dstpath := filepath.Join(tmp, relpath)
 
 		if isSupported, _, mimetype := file.Kind(path); isSupported {
+			supportedCount++
 			assert.NoError(converter.Convert(path, dstpath, mimetype))
 		}
 
@@ -43,4 +46,5 @@ func TestMediaConverter_Smoke(t *testing.T) {
 
 	assert.NoError(err)
 	assert.NoError(converter.Finish())
+	assert.Equal(supportedCount, testutil.NumFilesInFixture)
 }

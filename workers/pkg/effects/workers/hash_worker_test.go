@@ -18,14 +18,14 @@ func TestWorkers_HashWorker(t *testing.T) {
 
 	var count int64
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-	assert.Equal(numFilesInFixture, count)
+	assert.Equal(testutil.NumFilesInFixture, count)
 
 	assert.NoError(db.Model(&paths.Path{}).Where("init_hash IS NULL").Count(&count).Error)
-	assert.Equal(numFilesInFixture, count)
+	assert.Equal(testutil.NumFilesInFixture, count)
 
 	assert.NoError(workers.NewHashWorker(db).Work(metadataJobs[jobs.JobMetadataHash]))
 
 	assert.NoError(db.Model(&paths.Path{}).Where("init_hash IS NOT NULL").Count(&count).Error)
-	assert.Equal(numFilesInFixture, count)
+	assert.Equal(testutil.NumFilesInFixture, count)
 
 }

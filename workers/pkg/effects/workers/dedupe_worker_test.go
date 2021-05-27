@@ -31,10 +31,10 @@ func TestWorkers_DedupeWorker(t *testing.T) {
 	assert.NoError(workers.NewDedupeWorker(db).Work(metadataJobs[jobs.JobMetadataHash]))
 
 	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&files).Error)
-	assert.Len(files, int(numUniqueFilesInFixture))
+	assert.Len(files, int(testutil.NumUniqueFilesInFixture))
 
 	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&paths).Error)
-	assert.Len(paths, int(numFilesInFixture))
+	assert.Len(paths, int(testutil.NumFilesInFixture))
 
 	pathIDs := make([]uuid.UUID, len(paths))
 	fileIDs := make([]uuid.UUID, len(files))

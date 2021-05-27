@@ -19,6 +19,11 @@ import (
 var _, currentFile, _, _ = runtime.Caller(0)
 var MediaFixturesPath = filepath.Join(filepath.Dir(currentFile), ".media_fixtures")
 
+const (
+	NumFilesInFixture       int64 = 6
+	NumUniqueFilesInFixture int64 = 5
+)
+
 func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {
 	assert := require.New(t)
 

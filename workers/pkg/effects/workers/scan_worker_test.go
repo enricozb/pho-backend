@@ -24,7 +24,7 @@ func TestWorkers_ScanWorker(t *testing.T) {
 
 	var count int64
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ? AND kind != ''", importEntry.ID).Count(&count).Error)
-	assert.Equal(numFilesInFixture, count)
+	assert.Equal(testutil.NumFilesInFixture, count)
 
 	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusScan)
 	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadata)
@@ -46,7 +46,7 @@ func TestWorkers_ScanWorker_DuplicatePaths(t *testing.T) {
 	var count int64
 	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
 
-	assert.Equal(numFilesInFixture, count)
+	assert.Equal(testutil.NumFilesInFixture, count)
 
 	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusScan)
 	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadata)
