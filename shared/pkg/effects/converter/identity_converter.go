@@ -17,8 +17,8 @@ type identityConverter struct {
 }
 
 func init() {
-	registerConverter("image/png", newHEICConverter)
-	registerConverter("image/jpeg", newHEICConverter)
+	registerConverter("image/png", newIdentityConverter)
+	registerConverter("image/jpeg", newIdentityConverter)
 }
 
 func newIdentityConverter() converter {

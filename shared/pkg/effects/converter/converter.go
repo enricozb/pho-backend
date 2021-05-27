@@ -20,21 +20,21 @@ type converter interface {
 	Finish() error
 }
 
-var converters = map[string]func() converter{}
+var registeredConverters = make(map[string]func() converter)
 
 // registerConverter registers a converter for a specific mimetype.
 func registerConverter(mimetype string, c func() converter) {
-	if _, alreadyRegistered := converters[mimetype]; alreadyRegistered {
+	if _, alreadyRegistered := registeredConverters[mimetype]; alreadyRegistered {
 		panic(fmt.Errorf("converter already exists for mimetype %s", mimetype))
 	}
-	converters[mimetype] = c
+	registeredConverters[mimetype] = c
 
 	SupportedMimeTypes = append(SupportedMimeTypes, mimetype)
 }
 
 func NewMediaConverter() *MediaConverter {
-	m := &MediaConverter{}
-	for mimetype, c := range converters {
+	m := &MediaConverter{converters: make(map[string]converter)}
+	for mimetype, c := range registeredConverters {
 		m.converters[mimetype] = c()
 	}
 
