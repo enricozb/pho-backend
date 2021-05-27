@@ -5,6 +5,7 @@ import (
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
+	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
@@ -12,7 +13,7 @@ func TestWorkers_EXIFWorker(t *testing.T) {
 	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	importEntry, _ := runScanWorker(t, db, ".fixtures")
+	importEntry, _ := runScanWorker(t, db, testutil.MediaFixturesPath)
 	exifJob, err := jobs.PushJob(db, importEntry.ID, jobs.JobMetadataEXIF)
 	assert.NoError(err)
 

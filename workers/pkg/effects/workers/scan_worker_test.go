@@ -1,8 +1,6 @@
 package workers_test
 
 import (
-	"os"
-	"path"
 	"testing"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
@@ -15,10 +13,7 @@ func TestWorkers_ScanWorker(t *testing.T) {
 	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	cwd, err := os.Getwd()
-	assert.NoError(err, "getwd")
-
-	opts := jobs.ImportOptions{Paths: []string{path.Join(cwd, ".fixtures")}}
+	opts := jobs.ImportOptions{Paths: []string{testutil.MediaFixturesPath}}
 
 	importEntry := testutil.MockImportWithOptions(t, db, opts)
 	job, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
@@ -39,10 +34,7 @@ func TestWorkers_ScanWorker_DuplicatePaths(t *testing.T) {
 	assert, db, cleanup := setup(t)
 	defer cleanup()
 
-	cwd, err := os.Getwd()
-	assert.NoError(err, "getwd")
-
-	opts := jobs.ImportOptions{Paths: []string{path.Join(cwd, ".fixtures"), path.Join(cwd, ".fixtures")}}
+	opts := jobs.ImportOptions{Paths: []string{testutil.MediaFixturesPath, testutil.MediaFixturesPath}}
 
 	importEntry := testutil.MockImportWithOptions(t, db, opts)
 	job, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)

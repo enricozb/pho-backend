@@ -3,6 +3,8 @@ package testutil
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"gorm.io/gorm"
@@ -12,6 +14,10 @@ import (
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/db"
 )
+
+// get media fixtures relative to this file
+var _, currentFile, _, _ = runtime.Caller(0)
+var MediaFixturesPath = filepath.Join(filepath.Dir(currentFile), ".media_fixtures")
 
 func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {
 	assert := require.New(t)

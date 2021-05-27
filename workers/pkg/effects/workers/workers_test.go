@@ -1,8 +1,7 @@
 package workers_test
 
 import (
-	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,10 +44,9 @@ func assertDidNotEnqueueJob(assert *require.Assertions, db *gorm.DB, importID jo
 func runScanWorker(t *testing.T, db *gorm.DB, inputPath string) (importEntry jobs.Import, metadataJob jobs.Job) {
 	assert := require.New(t)
 
-	cwd, err := os.Getwd()
-	assert.NoError(err, "getwd")
+	assert.True(filepath.IsAbs(inputPath))
 
-	importEntry = testutil.MockImportWithOptions(t, db, jobs.ImportOptions{Paths: []string{path.Join(cwd, inputPath)}})
+	importEntry = testutil.MockImportWithOptions(t, db, jobs.ImportOptions{Paths: []string{inputPath}})
 	job, err := jobs.PushJob(db, importEntry.ID, jobs.JobScan)
 	assert.NoError(err, "push job")
 
@@ -85,4 +83,9 @@ func runHashWorker(t *testing.T, db *gorm.DB, hashJob jobs.Job) {
 func runEXIFWorker(t *testing.T, db *gorm.DB, exifJob jobs.Job) {
 	assert := require.New(t)
 	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
+}
+
+func runConvertWorker(t *testing.T, db *gorm.DB, convertJob jobs.Job) {
+	assert := require.New(t)
+	assert.NoError(workers.NewConvertWorker(db).Work(convertJob))
 }
