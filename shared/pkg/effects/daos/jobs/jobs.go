@@ -45,5 +45,5 @@ func (job *Job) SetStatus(db *gorm.DB, status JobStatus) error {
 
 func GetJobStatus(db *gorm.DB, jobID JobID) (status JobStatus, err error) {
 	var job Job
-	return job.Status, db.Where("id = ?", jobID).Find(&job).Error
+	return job.Status, db.Where("id = ?", jobID).First(&job).Error
 }

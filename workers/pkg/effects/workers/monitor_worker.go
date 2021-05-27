@@ -27,7 +27,7 @@ func NewMonitorWorker(db *gorm.DB, jobKindToEnqueue jobs.JobKind) *monitorWorker
 
 func (w *monitorWorker) Work(job jobs.Job) error {
 	importEntry := jobs.Import{}
-	if err := w.db.Find(&importEntry, job.ImportID).Error; err != nil {
+	if err := w.db.First(&importEntry, job.ImportID).Error; err != nil {
 		return fmt.Errorf("find import: %v", err)
 	}
 

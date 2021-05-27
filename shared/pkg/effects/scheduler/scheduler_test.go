@@ -76,7 +76,7 @@ func TestScheduler_WorkerErrors(t *testing.T) {
 	// wait for errors to be recorded
 	time.Sleep(1 * time.Second)
 
-	assert.NoError(db.Find(&importEntry).Error)
+	assert.NoError(db.First(&importEntry).Error)
 	assert.Equal(jobs.ImportStatusFailed, importEntry.Status)
 
 	failures := []jobs.ImportFailure{}

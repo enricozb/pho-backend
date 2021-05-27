@@ -27,7 +27,7 @@ func NewDedupeWorker(db *gorm.DB) *dedupeWorker {
 
 func (w *dedupeWorker) Work(job jobs.Job) error {
 	importEntry := jobs.Import{}
-	if err := w.db.Find(&importEntry, job.ImportID).Error; err != nil {
+	if err := w.db.First(&importEntry, job.ImportID).Error; err != nil {
 		return fmt.Errorf("find import: %v", err)
 	}
 

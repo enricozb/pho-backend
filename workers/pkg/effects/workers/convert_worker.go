@@ -26,7 +26,7 @@ func NewConvertWorker(db *gorm.DB) *ConvertWorker {
 
 func (w *ConvertWorker) Work(job jobs.Job) error {
 	importEntry := jobs.Import{}
-	if err := w.db.Find(&importEntry, job.ImportID).Error; err != nil {
+	if err := w.db.First(&importEntry, job.ImportID).Error; err != nil {
 		return fmt.Errorf("find import: %v", err)
 	}
 
@@ -44,7 +44,7 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 
 	for _, file := range filesToImport {
 		var path paths.Path
-		if err := w.db.Where("id = ?", file.ID).Find(&path).Error; err != nil {
+		if err := w.db.Where("id = ?", file.ID).First(&path).Error; err != nil {
 			return fmt.Errorf("get path: %v", err)
 		}
 
