@@ -1,4 +1,4 @@
 .PHONY: test
 
 test:
-	@richgo test ./...
+	@richgo test ./... -timeout 10s

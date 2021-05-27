@@ -59,6 +59,10 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("finish: %v", err)
 	}
 
+	if _, err := jobs.PushJob(w.db, importEntry.ID, jobs.JobCleanup); err != nil {
+		return fmt.Errorf("push job: %v", err)
+	}
+
 	return nil
 }
 

@@ -56,8 +56,9 @@ func TestWorkers_MetadataMonitorWorker_Monitors(t *testing.T) {
 		assertDidNotEnqueueJob(assert, db, importEntry.ID, jobKindToEnqueue)
 		job.Status = jobs.JobStatusDone
 		assert.NoError(db.Save(&job).Error)
-		time.Sleep(2 * time.Second)
 	}
 
-	assertDidNotEnqueueJob(assert, db, importEntry.ID, jobKindToEnqueue)
+	time.Sleep(2 * time.Second)
+
+	assertDidEnqueueJob(assert, db, importEntry.ID, jobKindToEnqueue)
 }

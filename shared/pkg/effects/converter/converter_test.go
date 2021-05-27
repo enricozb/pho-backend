@@ -19,6 +19,8 @@ func TestMediaConverter_Smoke(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "pho-tests-converter-*")
 	assert.NoError(err)
 
+	defer os.RemoveAll(tmp)
+
 	// convert the files
 	converter := converter.NewMediaConverter()
 

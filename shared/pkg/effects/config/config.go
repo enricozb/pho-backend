@@ -13,6 +13,7 @@ import (
 type PhoConfig struct {
 	*viper.Viper
 
+	// DataPath is the directory containing all media data.
 	DataPath string `mapstructure:"data_path"`
 }
 

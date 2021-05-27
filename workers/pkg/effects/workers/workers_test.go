@@ -1,12 +1,14 @@
 package workers_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
+	"github.com/enricozb/pho/shared/pkg/effects/config"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
@@ -15,7 +17,17 @@ import (
 func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {
 	assert := require.New(t)
 	db, cleanup := testutil.MockDB(t)
-	return assert, db, cleanup
+
+	tmp, err := os.MkdirTemp("", "pho-tests-datapath-*")
+	assert.NoError(err)
+
+	// modify the config so no user data will be polluted
+	config.Config.DataPath = tmp
+
+	return assert, db, func() {
+		cleanup()
+		os.RemoveAll(tmp)
+	}
 }
 
 func assertDidSetImportStatus(assert *require.Assertions, db *gorm.DB, importID jobs.ImportID, expectedStatus jobs.ImportStatus) {
@@ -70,6 +82,27 @@ func runMetadataWorker(t *testing.T, db *gorm.DB, metadataJob jobs.Job) (metadat
 	return metadataJobs, monitorJob
 }
 
+func runMetadataWorkers(t *testing.T, db *gorm.DB, metadataJobs map[jobs.JobKind]jobs.Job, monitorJob jobs.Job) (dedupeJob jobs.Job) {
+	assert := require.New(t)
+
+	for jobKind, job := range metadataJobs {
+		switch jobKind {
+		case jobs.JobMetadataHash:
+			runHashWorker(t, db, job)
+		case jobs.JobMetadataEXIF:
+			runEXIFWorker(t, db, job)
+		default:
+			assert.Fail("unexpected job kind: " + string(jobKind))
+		}
+
+		assert.NoError(job.SetStatus(db, jobs.JobStatusDone))
+	}
+
+	assert.NoError(workers.NewMonitorWorker(db, jobs.JobDedupe).Work(monitorJob))
+	assert.NoError(db.Where("import_id = ? AND kind = ?", monitorJob.ImportID, jobs.JobDedupe).Find(&dedupeJob).Error)
+	return dedupeJob
+}
+
 func runHashWorker(t *testing.T, db *gorm.DB, hashJob jobs.Job) {
 	assert := require.New(t)
 	assert.NoError(workers.NewHashWorker(db).Work(hashJob))
@@ -80,7 +113,20 @@ func runEXIFWorker(t *testing.T, db *gorm.DB, exifJob jobs.Job) {
 	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
 }
 
-func runConvertWorker(t *testing.T, db *gorm.DB, convertJob jobs.Job) {
+func runDedupeWorker(t *testing.T, db *gorm.DB, dedupeJob jobs.Job) (convertJob jobs.Job) {
+	assert := require.New(t)
+	assert.NoError(workers.NewDedupeWorker(db).Work(dedupeJob))
+
+	assert.NoError(db.Where("import_id = ? AND kind = ?", dedupeJob.ImportID, jobs.JobConvert).Find(&convertJob).Error)
+
+	return convertJob
+}
+
+func runConvertWorker(t *testing.T, db *gorm.DB, convertJob jobs.Job) (cleanupJob jobs.Job) {
 	assert := require.New(t)
 	assert.NoError(workers.NewConvertWorker(db).Work(convertJob))
+
+	assert.NoError(db.Where("import_id = ? AND kind = ?", convertJob.ImportID, jobs.JobCleanup).Find(&cleanupJob).Error)
+
+	return cleanupJob
 }
