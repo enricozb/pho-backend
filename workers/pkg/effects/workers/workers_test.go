@@ -18,11 +18,11 @@ func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {
 	assert := require.New(t)
 	db, cleanup := testutil.MockDB(t)
 
-	tmp, err := os.MkdirTemp("", "pho-tests-datapath-*")
+	tmp, err := os.MkdirTemp("", "pho-tests-datadir-*")
 	assert.NoError(err)
 
 	// modify the config so no user data will be polluted
-	config.Config.DataPath = tmp
+	config.Config.DataDir = tmp
 
 	return assert, db, func() {
 		cleanup()

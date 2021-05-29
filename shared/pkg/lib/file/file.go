@@ -1,6 +1,7 @@
 package file
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -27,4 +28,17 @@ func Kind(path string) (ok bool, kind files.FileKind, mime string) {
 
 	kind, ok = SupportedMimeTypeKinds[mimeinfo.String()]
 	return ok, kind, mimeinfo.String()
+}
+
+// MakeDirIfNotExist creates the directory passed in, including the parents if the entire path doesn't exist.
+func MakeDirIfNotExist(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("mkdir: %v", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("stat: %v", err)
+	}
+
+	return nil
 }

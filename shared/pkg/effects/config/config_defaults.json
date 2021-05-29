@@ -1,3 +1,4 @@
 {
-  "data_path": "~/.pho"
+  "db_dir": "~/.pho/db",
+  "data_dir": "~/.pho/media"
 }

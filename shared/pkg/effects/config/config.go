@@ -4,17 +4,22 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"os"
+	"reflect"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
+
+	"github.com/enricozb/pho/shared/pkg/lib/file"
 )
 
 type PhoConfig struct {
 	*viper.Viper
 
-	// DataPath is the directory containing all media data.
-	DataPath string `mapstructure:"data_path"`
+	// DBDir is the directory containing the pho db.
+	DBDir string `config:"dir" mapstructure:"db_dir"`
+
+	// DataDir is the directory containing all media data.
+	DataDir string `config:"dir" mapstructure:"data_dir"`
 }
 
 var Config = &PhoConfig{Viper: viper.New()}
@@ -24,7 +29,9 @@ var defaultConfig []byte
 
 func init() {
 	Config.SetConfigType("json")
-	Config.ReadConfig(bytes.NewReader(defaultConfig))
+	if err := Config.ReadConfig(bytes.NewReader(defaultConfig)); err != nil {
+		panic("read default config")
+	}
 
 	// user-defined config
 	Config.SetConfigName("config")
@@ -41,23 +48,27 @@ func init() {
 		panic(fmt.Errorf("unmarshal config: %v", err))
 	}
 
-	Config.DataPath, err = homedir.Expand(Config.DataPath)
-	if err != nil {
-		panic(fmt.Errorf("expand: %v", err))
-	}
-
-	if err := initDataPath(); err != nil {
+	if err := initDirs(); err != nil {
 		panic(fmt.Errorf("init data path: %v", err))
 	}
 }
 
-func initDataPath() error {
-	if _, err := os.Stat(Config.DataPath); os.IsNotExist(err) {
-		if err := os.Mkdir(Config.DataPath, 0755); err != nil {
-			return fmt.Errorf("mkdir: %v", err)
+func initDirs() error {
+	t := reflect.TypeOf(PhoConfig{})
+	v := reflect.ValueOf(Config)
+
+	for i := 0; i < t.NumField(); i++ {
+		if t.Field(i).Tag.Get("config") == "dir" {
+			dir, err := homedir.Expand(v.Elem().Field(i).String())
+			if err != nil {
+				return fmt.Errorf("expand: %v", err)
+			}
+			v.Elem().Field(i).SetString(dir)
+
+			if err := file.MakeDirIfNotExist(dir); err != nil {
+				return fmt.Errorf("make dir: %v", err)
+			}
 		}
-	} else if err != nil {
-		return fmt.Errorf("stat: %v", err)
 	}
 
 	return nil

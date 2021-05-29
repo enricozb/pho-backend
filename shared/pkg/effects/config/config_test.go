@@ -12,7 +12,11 @@ import (
 func TestConfig_Smoke(t *testing.T) {
 	assert := require.New(t)
 
-	dataPath, err := homedir.Expand("~/.pho")
+	dbDir, err := homedir.Expand("~/.pho/db")
 	assert.NoError(err)
-	assert.Equal(dataPath, config.Config.DataPath)
+	assert.Equal(dbDir, config.Config.DBDir)
+
+	dataDir, err := homedir.Expand("~/.pho/media")
+	assert.NoError(err)
+	assert.Equal(dataDir, config.Config.DataDir)
 }

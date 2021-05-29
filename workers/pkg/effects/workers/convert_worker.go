@@ -68,5 +68,5 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 
 // destPath returns the destination path after conversion for a file, _without the new extension_.
 func destPath(file files.File) string {
-	return filepath.Join(config.Config.DataPath, file.ID.String())
+	return filepath.Join(config.Config.DataDir, file.ID.String())
 }
