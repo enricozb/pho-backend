@@ -15,7 +15,7 @@ import (
 
 var _log = logs.MustGetLogger("scheduler")
 
-type Scheduler struct {
+type scheduler struct {
 	db      *gorm.DB
 	workers map[jobs.JobKind]worker.Worker
 
@@ -27,15 +27,15 @@ type SchedulerOptions struct {
 	PollingInterval time.Duration
 }
 
-func NewScheduler(db *gorm.DB, workers map[jobs.JobKind]worker.Worker, opts SchedulerOptions) *Scheduler {
-	return &Scheduler{
+func NewScheduler(db *gorm.DB, workers map[jobs.JobKind]worker.Worker, opts SchedulerOptions) *scheduler {
+	return &scheduler{
 		db:               db,
 		workers:          workers,
 		SchedulerOptions: opts,
 	}
 }
 
-func (s *Scheduler) Run() error {
+func (s *scheduler) Run() error {
 	_log.Debug("running scheduler...")
 
 	g, ctx := errgroup.WithContext(context.Background())
@@ -61,7 +61,7 @@ func (s *Scheduler) Run() error {
 	return g.Wait()
 }
 
-func (s *Scheduler) ProcessNext() error {
+func (s *scheduler) ProcessNext() error {
 	job, jobExists, err := jobs.PopJob(s.db)
 	if err != nil {
 		return fmt.Errorf("pop job: %v", err)
