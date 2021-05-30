@@ -50,17 +50,3 @@ func MockImportWithOptions(t *testing.T, db *gorm.DB, opts jobs.ImportOptions) j
 	return importEntry
 
 }
-
-// func NumRows(t *testing.T, db *sqlx.DB, tableName string) (count int) {
-// 	assert := assert.New(t)
-
-// 	q, args, err := squirrel.
-// 		Select("count(*)").
-// 		From(tableName).
-// 		ToSql()
-
-// 	assert.NoError(err, "build count query")
-
-// 	assert.NoError(db.Get(&count, q, args...), "query count")
-// 	return count
-// }
