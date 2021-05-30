@@ -14,11 +14,21 @@ import (
 const defaultDBFileName = "pho.db"
 
 func NewDB(dir, name string) (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open(filepath.Join(dir, name)), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(filepath.Join(dir, name)), &gorm.Config{
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},
 	})
+
+	if err != nil {
+		return nil, fmt.Errorf("open: %v", err)
+	}
+
+	if err := Migrate(db); err != nil {
+		return nil, fmt.Errorf("migrate: %v", err)
+	}
+
+	return db, nil
 }
 
 func MustDB() *gorm.DB {
