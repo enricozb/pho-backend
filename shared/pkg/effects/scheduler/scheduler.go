@@ -9,8 +9,11 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/lib/logs"
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
+
+var _log = logs.MustGetLogger("scheduler")
 
 type Scheduler struct {
 	db      *gorm.DB
@@ -33,6 +36,8 @@ func NewScheduler(db *gorm.DB, workers map[jobs.JobKind]worker.Worker, opts Sche
 }
 
 func (s *Scheduler) Run() error {
+	_log.Debug("running scheduler...")
+
 	g, ctx := errgroup.WithContext(context.Background())
 
 	for proc := 0; proc < s.Concurrency; proc++ {
@@ -40,6 +45,7 @@ func (s *Scheduler) Run() error {
 			for {
 				// error occured elsewhere...
 				if err := ctx.Err(); err != nil {
+					_log.Debug("bailing due to error")
 					return nil
 				}
 
@@ -62,6 +68,8 @@ func (s *Scheduler) ProcessNext() error {
 	}
 
 	if jobExists {
+		_log.Debugf("processing job: %v", job.Kind)
+
 		if worker, workerExists := s.workers[job.Kind]; !workerExists {
 			return fmt.Errorf("no worker for job kind: %s", job.Kind)
 		} else if err := worker.Work(job); err != nil {
