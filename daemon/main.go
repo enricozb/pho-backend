@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
+	"github.com/enricozb/pho/api"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/db"
 	"github.com/enricozb/pho/shared/pkg/effects/scheduler"
@@ -28,6 +29,7 @@ func main() {
 	flag.Parse()
 
 	db := db.MustDB()
+	a := api.NewAPI(db)
 	s := scheduler.NewScheduler(
 		db,
 		buildWorkers(db),
@@ -39,7 +41,7 @@ func main() {
 
 	g, _ := errgroup.WithContext(context.Background())
 	g.Go(s.Run)
-	// g.Go(api.run)
+	g.Go(a.Run)
 
 	if err := g.Wait(); err != nil {
 		panic(err)
