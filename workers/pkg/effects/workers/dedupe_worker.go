@@ -56,7 +56,7 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 		filesToImport[i].InitHash = path.InitHash
 	}
 
-	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Save(&filesToImport).Error; err != nil {
+	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&filesToImport).Error; err != nil {
 		return fmt.Errorf("insert files: %v", err)
 	}
 

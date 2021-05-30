@@ -9,19 +9,23 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/op/go-logging"
+
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
+	"github.com/enricozb/pho/shared/pkg/lib/logs"
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
 type exifWorker struct {
-	db *gorm.DB
+	db  *gorm.DB
+	log *logging.Logger
 }
 
 var _ worker.Worker = &exifWorker{}
 
 func NewEXIFWorker(db *gorm.DB) *exifWorker {
-	return &exifWorker{db: db}
+	return &exifWorker{db: db, log: logs.MustGetLogger("exif worker")}
 }
 
 func (w *exifWorker) Work(job jobs.Job) error {
@@ -41,19 +45,20 @@ func (w *exifWorker) Work(job jobs.Job) error {
 		filepaths = append(filepaths, path.Path)
 	}
 
-	exifData, err := getEXIFData(importEntry.ID, filepaths)
+	exifData, err := w.getEXIFData(importEntry.ID, filepaths)
 	if err != nil {
 		return fmt.Errorf("get exif data: %v", err)
 	}
 
 	for _, path := range pathEntries {
-		exif, ok := exifData[path.Path]
+		var ok bool
+
+		path.EXIFMetadata, ok = exifData[path.Path]
 		if !ok {
 			return fmt.Errorf("missing exif data from path: %s", path.Path)
 		}
 
-		path.EXIFMetadata = exif
-		if err := w.db.Save(&path).Error; err != nil {
+		if err := w.db.Model(&path).Select("exif_metadata").Updates(&path).Error; err != nil {
 			return fmt.Errorf("update: %v", err)
 		}
 	}
@@ -62,7 +67,7 @@ func (w *exifWorker) Work(job jobs.Job) error {
 }
 
 // getEXIFData returns `EXIFMetadata` for each of path in `paths`, returning a mapping from `path.Path` to `EXIFMetadata`.
-func getEXIFData(importID jobs.ImportID, filepaths []string) (map[string]paths.EXIFMetadata, error) {
+func (w *exifWorker) getEXIFData(importID jobs.ImportID, filepaths []string) (map[string]paths.EXIFMetadata, error) {
 	// write file paths to temporary file
 	tmp, err := ioutil.TempFile("", "pho-import-files-"+importID.String())
 	for _, path := range filepaths {
@@ -84,7 +89,7 @@ func getEXIFData(importID jobs.ImportID, filepaths []string) (map[string]paths.E
 
 	data, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("run exiftool: %v", err)
+		return nil, fmt.Errorf("run exiftool [%v]: stderr: %s", err, data)
 	}
 
 	var exifMetadatas []paths.EXIFMetadata

@@ -25,7 +25,7 @@ func TestWorkers_HashWorker(t *testing.T) {
 
 	assert.NoError(workers.NewHashWorker(db).Work(metadataJobs[jobs.JobMetadataHash]))
 
-	assert.NoError(db.Model(&paths.Path{}).Where("init_hash IS NOT NULL").Count(&count).Error)
+	assert.NoError(db.Model(&paths.Path{}).Where("init_hash IS NOT NULL AND init_hash != ''").Count(&count).Error)
 	assert.Equal(testutil.NumFilesInFixture, count)
 
 }

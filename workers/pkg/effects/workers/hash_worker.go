@@ -7,19 +7,23 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/op/go-logging"
+
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
+	"github.com/enricozb/pho/shared/pkg/lib/logs"
 	"github.com/enricozb/pho/workers/pkg/lib/worker"
 )
 
 type hashWorker struct {
-	db *gorm.DB
+	db  *gorm.DB
+	log *logging.Logger
 }
 
 var _ worker.Worker = &hashWorker{}
 
 func NewHashWorker(db *gorm.DB) *hashWorker {
-	return &hashWorker{db: db}
+	return &hashWorker{db: db, log: logs.MustGetLogger("hash worker")}
 }
 
 func (w *hashWorker) Work(job jobs.Job) error {
@@ -38,7 +42,8 @@ func (w *hashWorker) Work(job jobs.Job) error {
 		if err != nil {
 			return fmt.Errorf("compute hash: %v", err)
 		}
-		if err := w.db.Model(&paths.Path{}).Where("id = ?", path.ID).Update("init_hash", hash[:]).Error; err != nil {
+
+		if err := w.db.Model(&path).Update("init_hash", hash[:]).Error; err != nil {
 			return fmt.Errorf("update init_hash: %v", err)
 		}
 	}
@@ -47,7 +52,7 @@ func (w *hashWorker) Work(job jobs.Job) error {
 }
 
 func computeHash(path string) ([sha256.Size]byte, error) {
-	const chunkSize = 262144 // 2 ** 18
+	const chunkSize = 2 << 15
 
 	f, err := os.Open(path)
 	if err != nil {
