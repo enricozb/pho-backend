@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RecordJobFailure(db *gorm.DB, job Job, err error) error {
+func (job *Job) RecordFailure(db *gorm.DB, err error) error {
 	if err := db.Model(&Job{}).Where("id = ?", job.ID).Update("status", JobStatusFailed).Error; err != nil {
 		return fmt.Errorf("update job status: %v", err)
 	}

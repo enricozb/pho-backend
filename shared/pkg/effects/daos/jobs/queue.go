@@ -37,7 +37,7 @@ func PopJob(db *gorm.DB) (job Job, jobExists bool, err error) {
 	if err != nil {
 		return Job{}, false, fmt.Errorf("num jobs: %v", err)
 	} else if numJobs == 0 {
-		return Job{}, false, fmt.Errorf("peek job: %v", err)
+		return Job{}, false, nil
 	}
 
 	if err := db.Where("status = ?", JobStatusNotStarted).First(&job).Error; err != nil {

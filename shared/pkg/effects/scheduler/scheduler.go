@@ -36,7 +36,7 @@ func NewScheduler(db *gorm.DB, workers map[jobs.JobKind]worker.Worker, opts Sche
 }
 
 func (s *scheduler) Run() error {
-	_log.Debug("running scheduler...")
+	_log.Debugf("running scheduler %+v...", s.SchedulerOptions)
 
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -63,17 +63,25 @@ func (s *scheduler) Run() error {
 
 func (s *scheduler) ProcessNext() error {
 	job, jobExists, err := jobs.PopJob(s.db)
+
 	if err != nil {
 		return fmt.Errorf("pop job: %v", err)
 	}
 
 	if jobExists {
-		_log.Debugf("processing job: %v", job.Kind)
+		_log.Debugf("dispatching worker: %s", job.Kind)
 
 		if worker, workerExists := s.workers[job.Kind]; !workerExists {
 			return fmt.Errorf("no worker for job kind: %s", job.Kind)
 		} else if err := worker.Work(job); err != nil {
-			return jobs.RecordJobFailure(s.db, job, err)
+
+			_log.Errorf("[%s] failed: %v", job.Kind, err)
+
+			if err := job.RecordFailure(s.db, err); err != nil {
+				return fmt.Errorf("record failure: %v", err)
+			}
+		} else if err := job.SetStatus(s.db, jobs.JobStatusDone); err != nil {
+			return fmt.Errorf("set status: %v", err)
 		}
 	}
 
