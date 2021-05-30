@@ -24,7 +24,7 @@ func (a *api) Run() error {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/import", handleImport).Methods("POST")
+	r.HandleFunc("/import", a.handleImport).Methods("POST")
 
 	http.Handle("/", r)
 

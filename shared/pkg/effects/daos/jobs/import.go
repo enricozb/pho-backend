@@ -27,6 +27,20 @@ type ImportOptions struct {
 	Paths []string `json:"paths"`
 }
 
+func StartImport(db *gorm.DB, importOptions ImportOptions) error {
+	importEntry := Import{Opts: importOptions}
+
+	if err := db.Create(&importEntry).Error; err != nil {
+		return fmt.Errorf("create import: %v", err)
+	}
+
+	if _, err := PushJob(db, importEntry.ID, JobScan); err != nil {
+		return fmt.Errorf("push job: %v", err)
+	}
+
+	return nil
+}
+
 type ImportFailure struct {
 	ID       uint
 	ImportID ImportID

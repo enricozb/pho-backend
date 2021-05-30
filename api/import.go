@@ -11,7 +11,7 @@ type ImportBody struct {
 	Opts jobs.ImportOptions `json:"opts"`
 }
 
-func handleImport(res http.ResponseWriter, req *http.Request) {
+func (a *api) handleImport(res http.ResponseWriter, req *http.Request) {
 	_log.Debug("handling import")
 
 	var importBody ImportBody
@@ -21,5 +21,8 @@ func handleImport(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_log.Infof("got body %v", importBody)
+	if err := jobs.StartImport(a.db, importBody.Opts); err != nil {
+		errorf(res, http.StatusInternalServerError, "start import: %v", err)
+		return
+	}
 }
