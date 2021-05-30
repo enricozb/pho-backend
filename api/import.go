@@ -12,12 +12,14 @@ type ImportBody struct {
 }
 
 func handleImport(res http.ResponseWriter, req *http.Request) {
-	_log.Info("handling import")
+	_log.Debug("handling import")
 
 	var importBody ImportBody
 
 	if err := json.NewDecoder(req.Body).Decode(&importBody); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		errorf(res, http.StatusBadRequest, "decode json: %v", err)
 		return
 	}
+
+	_log.Infof("got body %v", importBody)
 }
