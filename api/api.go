@@ -24,7 +24,9 @@ func (a *api) Run() error {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/import/new", a.newImport).Methods("POST")
-	r.HandleFunc("/import/{id:[-0-9a-f]+}/status", a.importStatus)
+	r.HandleFunc("/import/{id:[-0-9a-f]+}/status", a.importStatus).Methods("GET")
+
+	r.HandleFunc("/files/all", a.allFiles).Methods("GET")
 
 	http.Handle("/", r)
 
