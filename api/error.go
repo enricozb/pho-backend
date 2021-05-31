@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func errorf(res http.ResponseWriter, status int, msg string, args ...interface{}) {
+func errorf(w http.ResponseWriter, status int, msg string, args ...interface{}) {
 	pc, _, line, ok := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)
 
@@ -18,5 +18,5 @@ func errorf(res http.ResponseWriter, status int, msg string, args ...interface{}
 		_log.Errorf(msg, args...)
 	}
 
-	http.Error(res, fmt.Errorf(msg, args...).Error(), status)
+	http.Error(w, fmt.Errorf(msg, args...).Error(), status)
 }

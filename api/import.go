@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 )
 
@@ -11,18 +14,51 @@ type ImportBody struct {
 	Opts jobs.ImportOptions `json:"opts"`
 }
 
-func (a *api) handleImport(res http.ResponseWriter, req *http.Request) {
-	_log.Debug("handling import")
+func (a *api) newImport(w http.ResponseWriter, r *http.Request) {
+	_log.Debug("handling new import")
 
 	var importBody ImportBody
 
-	if err := json.NewDecoder(req.Body).Decode(&importBody); err != nil {
-		errorf(res, http.StatusBadRequest, "decode json: %v", err)
+	if err := json.NewDecoder(r.Body).Decode(&importBody); err != nil {
+		errorf(w, http.StatusBadRequest, "decode json: %v", err)
 		return
 	}
 
-	if err := jobs.StartImport(a.db, importBody.Opts); err != nil {
-		errorf(res, http.StatusInternalServerError, "start import: %v", err)
+	if importEntry, err := jobs.StartImport(a.db, importBody.Opts); err != nil {
+		errorf(w, http.StatusInternalServerError, "start import: %v", err)
+		return
+	} else {
+		if err := json.NewEncoder(w).Encode(map[string]string{
+			"id": importEntry.String(),
+		}); err != nil {
+			errorf(w, http.StatusInternalServerError, "encode: %v", err)
+			return
+		}
+	}
+}
+
+func (a *api) importStatus(w http.ResponseWriter, r *http.Request) {
+	_log.Debug("handling import status")
+
+	importID, err := uuid.Parse(mux.Vars(r)["id"])
+	if err != nil {
+		errorf(w, http.StatusBadRequest, "malformed import id: %v", err)
+		return
+	}
+
+	importEntry := jobs.Import{ID: importID}
+
+	if err := a.db.First(&importEntry).Error; err != nil {
+		errorf(w, http.StatusInternalServerError, "get import: %v", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(map[string]string{
+		"id":         importEntry.ID.String(),
+		"status":     string(importEntry.Status),
+		"updated_at": importEntry.UpdatedAt.String(),
+	}); err != nil {
+		errorf(w, http.StatusInternalServerError, "encode: %v", err)
 		return
 	}
 }
