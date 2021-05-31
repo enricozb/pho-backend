@@ -50,8 +50,13 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 
 		src := path.Path
 		dst := destPath(file)
-		if err := converter.Convert(src, dst, path.Mimetype); err != nil {
+		dst, err := converter.Convert(src, dst, path.Mimetype)
+		if err != nil {
 			return fmt.Errorf("convert: %v", err)
+		}
+
+		if err := w.db.Model(&file).Updates(map[string]interface{}{"extension": filepath.Ext(dst)}).Error; err != nil {
+			return fmt.Errorf("update: %v", err)
 		}
 	}
 

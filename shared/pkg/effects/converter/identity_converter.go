@@ -26,11 +26,11 @@ func newIdentityConverter() converter {
 	return &identityConverter{ctx: ctx, g: g}
 }
 
-func (c *identityConverter) Convert(src, dst string) error {
+func (c *identityConverter) Convert(src, dst string) (string, error) {
 	dst = dst + strings.ToUpper(filepath.Ext(src))
 	c.g.Go(func() error { return copyfile.CopyFile(src, dst) })
 
-	return nil
+	return dst, nil
 }
 
 func (c *identityConverter) Finish() error {

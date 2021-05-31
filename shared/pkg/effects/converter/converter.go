@@ -14,7 +14,8 @@ type MediaConverter struct {
 type converter interface {
 	// Convert copies `src` to `dst`, converting between the two files if necessary.
 	// `dst` may not yet exist after this function exits.
-	Convert(src, dst string) error
+	// Returns the full path of the destination after adding any suffixes.
+	Convert(src, dst string) (string, error)
 
 	// Complete any remaining conversion tasks, blocking until all are done.
 	Finish() error
@@ -41,10 +42,10 @@ func NewMediaConverter() *MediaConverter {
 	return m
 }
 
-func (m *MediaConverter) Convert(src, dst, srcMimeType string) error {
+func (m *MediaConverter) Convert(src, dst, srcMimeType string) (string, error) {
 	c, converterExists := m.converters[srcMimeType]
 	if !converterExists {
-		return fmt.Errorf("mimetype not supported: %s", srcMimeType)
+		return "", fmt.Errorf("mimetype not supported: %s", srcMimeType)
 	}
 
 	return c.Convert(src, dst)

@@ -17,11 +17,11 @@ func newHEICConverter() converter {
 	return &heicConverter{pool.NewPool(32)}
 }
 
-func (c *heicConverter) Convert(src, dst string) error {
+func (c *heicConverter) Convert(src, dst string) (string, error) {
 	dst = dst + ".JPG"
 	c.p.Go(func() error { return heic.Convert(src, dst) })
 
-	return nil
+	return dst, nil
 }
 
 func (c *heicConverter) Finish() error {

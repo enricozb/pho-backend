@@ -40,7 +40,8 @@ func TestMediaConverter_Smoke(t *testing.T) {
 
 		if isSupported, _, mimetype := file.Kind(path); isSupported {
 			supportedCount++
-			assert.NoError(converter.Convert(path, dstpath, mimetype))
+			_, err := converter.Convert(path, dstpath, mimetype)
+			assert.NoError(err)
 		}
 
 		return nil
