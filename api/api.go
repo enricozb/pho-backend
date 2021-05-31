@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 
+	"github.com/enricozb/pho/shared/pkg/effects/config"
 	"github.com/enricozb/pho/shared/pkg/lib/logs"
 )
 
@@ -27,6 +28,7 @@ func (a *api) Run() error {
 	r.HandleFunc("/import/{id:[-0-9a-f]+}/status", a.importStatus).Methods("GET")
 
 	r.HandleFunc("/files/all", a.allFiles).Methods("GET")
+	r.PathPrefix("/files/data/").Handler(http.StripPrefix("/files/data/", http.FileServer(http.Dir(config.Config.MediaDir))))
 
 	http.Handle("/", r)
 

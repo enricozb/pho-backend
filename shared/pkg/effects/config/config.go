@@ -18,8 +18,8 @@ type PhoConfig struct {
 	// DBDir is the directory containing the pho db.
 	DBDir string `config:"dir" mapstructure:"db_dir"`
 
-	// DataDir is the directory containing all media data.
-	DataDir string `config:"dir" mapstructure:"data_dir"`
+	// MediaDir is the directory containing all media data.
+	MediaDir string `config:"dir" mapstructure:"media_dir"`
 }
 
 var Config = &PhoConfig{Viper: viper.New()}

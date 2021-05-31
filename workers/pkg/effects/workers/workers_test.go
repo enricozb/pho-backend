@@ -22,7 +22,7 @@ func setup(t *testing.T) (*require.Assertions, *gorm.DB, func()) {
 	assert.NoError(err)
 
 	// modify the config so no user data will be polluted
-	config.Config.DataDir = tmp
+	config.Config.MediaDir = tmp
 
 	return assert, db, func() {
 		cleanup()
