@@ -48,7 +48,6 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 
 		filesToImport[i].ID = path.ID
 		filesToImport[i].ImportID = path.ImportID
-		filesToImport[i].Extension = "NOT_COPIED"
 		filesToImport[i].Kind = path.Kind
 		filesToImport[i].Timestamp = metadata.timestamp
 		filesToImport[i].LiveID = metadata.liveID

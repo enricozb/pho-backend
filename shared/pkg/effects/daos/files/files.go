@@ -15,11 +15,12 @@ type FileID = uuid.UUID
 type File struct {
 	ID        FileID
 	ImportID  jobs.ImportID `gorm:"not null"`
-	Extension string        `gorm:"not null"`
 	Kind      FileKind      `gorm:"not null"`
 	Timestamp time.Time     `gorm:"not null"`
 	InitHash  []byte        `gorm:"unique;not null"`
 	LiveID    []byte        `gorm:"not null"`
+
+	Extension string `gorm:"default:NULL"`
 
 	Import jobs.Import
 }
