@@ -24,6 +24,9 @@ func (a *api) Run() error {
 	_log.Debug("running api...")
 
 	r := mux.NewRouter()
+
+	r.HandleFunc("/heartbeat", a.heartbeat).Methods("GET")
+
 	r.HandleFunc("/import/new", a.newImport).Methods("POST")
 	r.HandleFunc("/import/{id:[-0-9a-f]+}/status", a.importStatus).Methods("GET")
 
