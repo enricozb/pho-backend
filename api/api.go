@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 
@@ -35,5 +36,5 @@ func (a *api) Run() error {
 
 	http.Handle("/", r)
 
-	return http.ListenAndServe(":4000", r)
+	return http.ListenAndServe(":4000", handlers.CORS()(r))
 }
