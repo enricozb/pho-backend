@@ -23,7 +23,6 @@ func TestWorkers_DedupeWorker(t *testing.T) {
 	runEXIFWorker(t, db, metadataJobs[jobs.JobMetadataEXIF])
 
 	var files []files.File
-	var paths []paths.Path
 
 	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&files).Error)
 	assert.Len(files, 0)
@@ -33,7 +32,8 @@ func TestWorkers_DedupeWorker(t *testing.T) {
 	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&files).Error)
 	assert.Len(files, int(testutil.NumUniqueFilesInFixture))
 
-	assert.NoError(db.Where("import_id = ?", importEntry.ID).Find(&paths).Error)
+	paths, err := paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
 	assert.Len(paths, int(testutil.NumFilesInFixture))
 
 	pathIDs := make([]uuid.UUID, len(paths))

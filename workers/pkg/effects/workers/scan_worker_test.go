@@ -22,9 +22,9 @@ func TestWorkers_ScanWorker(t *testing.T) {
 	scanWorker := workers.NewScanWorker(db)
 	assert.NoError(scanWorker.Work(job))
 
-	var count int64
-	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ? AND kind != ''", importEntry.ID).Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
+	pathsToCheck, err := paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
 
 	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusScan)
 	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadata)
@@ -43,10 +43,9 @@ func TestWorkers_ScanWorker_DuplicatePaths(t *testing.T) {
 	scanWorker := workers.NewScanWorker(db)
 	assert.NoError(scanWorker.Work(job))
 
-	var count int64
-	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-
-	assert.Equal(testutil.NumFilesInFixture, count)
+	pathsToCheck, err := paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
 
 	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusScan)
 	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadata)

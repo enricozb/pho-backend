@@ -10,6 +10,7 @@ import (
 
 	"github.com/enricozb/pho/shared/pkg/effects/config"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
@@ -46,6 +47,12 @@ func assertDidNotEnqueueJob(assert *require.Assertions, db *gorm.DB, importID jo
 	var count int64
 	assert.NoError(db.Model(&jobs.Job{}).Where("import_id = ? AND kind = ?", importID, kind).Count(&count).Error)
 	assert.Equal(int64(0), count)
+}
+
+func assertValidPathsCount(assert *require.Assertions, db *gorm.DB, importID jobs.ImportID, count int64) {
+	pathsToCheck, err := paths.PathsInPipeline(db, importID)
+	assert.NoError(err)
+	assert.Equal(int(count), len(pathsToCheck))
 }
 
 func runScanWorker(t *testing.T, db *gorm.DB, inputPath string) (importEntry jobs.Import, metadataJob jobs.Job) {

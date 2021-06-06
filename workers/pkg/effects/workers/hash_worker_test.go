@@ -16,16 +16,19 @@ func TestWorkers_HashWorker(t *testing.T) {
 	importEntry, metadataJob := runScanWorker(t, db, testutil.MediaFixturesPath)
 	metadataJobs, _ := runMetadataWorker(t, db, metadataJob)
 
-	var count int64
-	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
-
-	assert.NoError(db.Model(&paths.Path{}).Where("init_hash IS NULL").Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
+	pathsToCheck, err := paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
+	for _, path := range pathsToCheck {
+		assert.Len(path.InitHash, 0)
+	}
 
 	assert.NoError(workers.NewHashWorker(db).Work(metadataJobs[jobs.JobMetadataHash]))
 
-	assert.NoError(db.Model(&paths.Path{}).Where("init_hash IS NOT NULL AND init_hash != ''").Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
-
+	pathsToCheck, err = paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
+	for _, path := range pathsToCheck {
+		assert.NotEqual(0, len(path.InitHash))
+	}
 }

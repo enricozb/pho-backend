@@ -17,15 +17,23 @@ func TestWorkers_EXIFWorker(t *testing.T) {
 	exifJob, err := jobs.PushJob(db, importEntry.ID, jobs.JobMetadataEXIF)
 	assert.NoError(err)
 
-	var count int64
-	assert.NoError(db.Model(&paths.Path{}).Where("import_id = ?", importEntry.ID).Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
+	pathsToCheck, err := paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
 
-	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata = x'7B7D'").Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
+	// check that exif metadata is empty for valid paths
+	for _, path := range pathsToCheck {
+		assert.Equal(paths.EXIFMetadata{}, path.EXIFMetadata)
+	}
 
 	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
 
-	assert.NoError(db.Model(&paths.Path{}).Where("exif_metadata != x'7B7D'").Count(&count).Error)
-	assert.Equal(testutil.NumFilesInFixture, count)
+	pathsToCheck, err = paths.PathsInPipeline(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
+
+	// check that exif metadata is not empty for valid paths
+	for _, path := range pathsToCheck {
+		assert.NotEqual(path.EXIFMetadata, paths.EXIFMetadata{})
+	}
 }

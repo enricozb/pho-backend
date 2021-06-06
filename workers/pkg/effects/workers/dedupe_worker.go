@@ -34,8 +34,8 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("set import status: %v", err)
 	}
 
-	var pathsToImport []paths.Path
-	if err := w.db.Where("import_id = ?", importEntry.ID).Find(&pathsToImport).Error; err != nil {
+	pathsToImport, err := paths.PathsInPipeline(w.db, importEntry.ID)
+	if err != nil {
 		return fmt.Errorf("get paths: %v", err)
 	}
 

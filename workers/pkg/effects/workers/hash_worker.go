@@ -32,8 +32,8 @@ func (w *hashWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("find import: %v", err)
 	}
 
-	var pathsToHash []paths.Path
-	if err := w.db.Where("import_id = ?", importEntry.ID).Find(&pathsToHash).Error; err != nil {
+	pathsToHash, err := paths.PathsInPipeline(w.db, importEntry.ID)
+	if err != nil {
 		return fmt.Errorf("get paths: %v", err)
 	}
 

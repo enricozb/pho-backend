@@ -25,8 +25,15 @@ type Path struct {
 	Mimetype string
 	InitHash []byte
 
+	// DiscardReason explains why this file was ignored. If not empty, then this path was not imported and no metadata for this path is guaranteed to be set.
+	DiscardReason string `gorm:"default:''"`
+
 	ImportID uuid.UUID
 	Import   jobs.Import
+}
+
+func PathsInPipeline(db *gorm.DB, importID jobs.ImportID) (validPaths []Path, err error) {
+	return validPaths, db.Where("import_id = ? AND LENGTH(discard_reason) = 0", importID).Find(&validPaths).Error
 }
 
 func (p *Path) BeforeSave(tx *gorm.DB) (err error) {

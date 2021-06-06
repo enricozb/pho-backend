@@ -34,12 +34,12 @@ func (w *scanWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("set import status: %v", err)
 	}
 
-	scannedPaths, err := w.walkPaths(importEntry)
+	paths, err := w.walkPaths(importEntry)
 	if err != nil {
 		return fmt.Errorf("walk paths: %v", err)
 	}
 
-	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&scannedPaths).Error; err != nil {
+	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&paths).Error; err != nil {
 		return fmt.Errorf("add paths: %v", err)
 	}
 
@@ -50,13 +50,15 @@ func (w *scanWorker) Work(job jobs.Job) error {
 	return nil
 }
 
-// walkPaths returns every supported path under `importEntry.Opts.Paths`.
+// walkPaths returns all file paths under `importEntry.Opts.Paths`.
 func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.Path, err error) {
-	computePath := func(path string) (bool, paths.Path) {
-		if isSupported, kind, mimetype := file.Kind(path); isSupported {
-			return true, paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind, Mimetype: mimetype}
+
+	computePath := func(path string) paths.Path {
+		isSupported, kind, mimetype := file.Kind(path)
+		if isSupported {
+			return paths.Path{ImportID: importEntry.ID, Path: path, Kind: kind, Mimetype: mimetype}
 		}
-		return false, paths.Path{}
+		return paths.Path{ImportID: importEntry.ID, Path: path, DiscardReason: fmt.Sprintf("mimetype '%s' is unsupported", mimetype)}
 	}
 
 	for _, path := range importEntry.Opts.Paths {
@@ -68,9 +70,7 @@ func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.
 			err := godirwalk.Walk(path, &godirwalk.Options{
 				Callback: func(path string, de *godirwalk.Dirent) error {
 					if !de.IsDir() {
-						if shouldAdd, pathEntry := computePath(path); shouldAdd {
-							supportedPaths = append(supportedPaths, pathEntry)
-						}
+						supportedPaths = append(supportedPaths, computePath(path))
 					}
 
 					return nil
@@ -81,8 +81,8 @@ func (w *scanWorker) walkPaths(importEntry jobs.Import) (supportedPaths []paths.
 			if err != nil {
 				return nil, fmt.Errorf("walk '%s': %v", path, err)
 			}
-		} else if shouldAdd, pathEntry := computePath(path); shouldAdd {
-			supportedPaths = append(supportedPaths, pathEntry)
+		} else {
+			supportedPaths = append(supportedPaths, computePath(path))
 		}
 	}
 

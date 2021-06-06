@@ -34,8 +34,8 @@ func (w *exifWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("find import: %v", err)
 	}
 
-	var pathEntries []paths.Path
-	if err := w.db.Where("import_id = ?", importEntry.ID).Find(&pathEntries).Error; err != nil {
+	pathEntries, err := paths.PathsInPipeline(w.db, importEntry.ID)
+	if err != nil {
 		return fmt.Errorf("get paths: %v", err)
 	}
 
