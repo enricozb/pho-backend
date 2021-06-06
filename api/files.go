@@ -18,10 +18,12 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 
 	filesJSON := make(map[string]interface{})
 	for _, file := range files {
-		filesJSON[file.ID.String()] = map[string]string{
+		filesJSON[file.ID.String()] = map[string]interface{}{
 			"kind":          string(file.Kind),
 			"time":          file.Timestamp.UTC().String(),
 			"live":          string(file.LiveID),
+			"width":         file.Width,
+			"height":        file.Height,
 			"data_endpoint": fmt.Sprintf("/files/data/%s%s", file.ID.String(), file.Extension),
 		}
 	}
