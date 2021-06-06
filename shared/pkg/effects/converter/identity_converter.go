@@ -16,10 +16,10 @@ type identityConverter struct {
 	g   *errgroup.Group
 }
 
-func init() {
-	registerConverter("image/png", "image/png", newIdentityConverter)
-	registerConverter("image/jpeg", "image/jpeg", newIdentityConverter)
-}
+var (
+	_ = registerConverter("image/png", "image/png", newIdentityConverter)
+	_ = registerConverter("image/jpeg", "image/jpeg", newIdentityConverter)
+)
 
 func newIdentityConverter() converter {
 	g, ctx := errgroup.WithContext(context.Background())
