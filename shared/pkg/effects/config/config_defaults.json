@@ -1,4 +1,7 @@
 {
   "db_dir": "~/.pho/db",
-  "media_dir": "~/.pho/media"
+
+  "media_dir": "~/.pho/imported/media",
+  "thumb_dir": "~/.pho/imported/thumbnails",
+  "originals_dir": "~/.pho/imported/originals"
 }

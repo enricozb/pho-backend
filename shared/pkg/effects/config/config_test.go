@@ -16,7 +16,7 @@ func TestConfig_Smoke(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(dbDir, config.Config.DBDir)
 
-	dataDir, err := homedir.Expand("~/.pho/media")
+	mediaDir, err := homedir.Expand("~/.pho/imported/media")
 	assert.NoError(err)
-	assert.Equal(dataDir, config.Config.MediaDir)
+	assert.Equal(mediaDir, config.Config.MediaDir)
 }

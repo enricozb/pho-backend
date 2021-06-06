@@ -18,8 +18,15 @@ type PhoConfig struct {
 	// DBDir is the directory containing the pho db.
 	DBDir string `config:"dir" mapstructure:"db_dir"`
 
-	// MediaDir is the directory containing all media data.
+	// MediaDir is the directory containing imported media.
 	MediaDir string `config:"dir" mapstructure:"media_dir"`
+
+	// ThumbDir is the directory containing thumbnails.
+	ThumbDir string `config:"dir" mapstructure:"thumb_dir"`
+
+	// OriginalsDir is the directory containing any original files that were converted during import.
+	// Files that were copied (not converted) during an import will not be present here.
+	OriginalsDir string `config:"dir" mapstructure:"originals_dir"`
 }
 
 var Config = &PhoConfig{Viper: viper.New()}
