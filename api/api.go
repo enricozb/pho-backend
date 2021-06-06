@@ -29,6 +29,7 @@ func (a *api) Run() error {
 	r.HandleFunc("/heartbeat", a.heartbeat).Methods("GET")
 
 	r.HandleFunc("/import/new", a.newImport).Methods("POST")
+	r.HandleFunc("/import/{id:[-0-9a-f]+}/cleanup", a.cleanupImport).Methods("POST")
 	r.HandleFunc("/import/{id:[-0-9a-f]+}/status", a.importStatus).Methods("GET")
 
 	r.HandleFunc("/files/all", a.allFiles).Methods("GET")

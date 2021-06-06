@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
 type ImportBody struct {
@@ -34,6 +35,20 @@ func (a *api) newImport(w http.ResponseWriter, r *http.Request) {
 			errorf(w, http.StatusInternalServerError, "encode: %v", err)
 			return
 		}
+	}
+}
+
+func (a *api) cleanupImport(w http.ResponseWriter, r *http.Request) {
+	_log.Debug("handling cleanup import")
+
+	importID, err := uuid.Parse(mux.Vars(r)["id"])
+	if err != nil {
+		errorf(w, http.StatusBadRequest, "malformed import id: %v", err)
+		return
+	}
+
+	if _, err := jobs.PushJobWithArgs(a.db, importID, jobs.JobCleanup, workers.CleanupWorkerArgs{Full: true}); err != nil {
+		errorf(w, http.StatusInternalServerError, "start import: %v", err)
 	}
 }
 
