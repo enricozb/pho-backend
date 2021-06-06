@@ -25,6 +25,7 @@ func (a *api) Run() error {
 	_log.Debug("running api...")
 
 	r := mux.NewRouter()
+	r.Use(loggingMiddleware)
 
 	r.HandleFunc("/heartbeat", a.heartbeat).Methods("GET")
 

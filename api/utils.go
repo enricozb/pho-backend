@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_log.Debugf("%s: %s", r.Method, r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func errorf(w http.ResponseWriter, status int, msg string, args ...interface{}) {
 	pc, _, line, ok := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)

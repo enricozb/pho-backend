@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
 	"github.com/enricozb/pho/workers/pkg/effects/workers"
 )
 
@@ -16,8 +17,6 @@ type ImportBody struct {
 }
 
 func (a *api) newImport(w http.ResponseWriter, r *http.Request) {
-	_log.Debug("handling new import")
-
 	var importBody ImportBody
 
 	if err := json.NewDecoder(r.Body).Decode(&importBody); err != nil {
@@ -39,8 +38,6 @@ func (a *api) newImport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) cleanupImport(w http.ResponseWriter, r *http.Request) {
-	_log.Debug("handling cleanup import")
-
 	importID, err := uuid.Parse(mux.Vars(r)["id"])
 	if err != nil {
 		errorf(w, http.StatusBadRequest, "malformed import id: %v", err)
@@ -53,8 +50,6 @@ func (a *api) cleanupImport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) importStatus(w http.ResponseWriter, r *http.Request) {
-	_log.Debug("handling import status")
-
 	importID, err := uuid.Parse(mux.Vars(r)["id"])
 	if err != nil {
 		errorf(w, http.StatusBadRequest, "malformed import id: %v", err)
@@ -68,10 +63,23 @@ func (a *api) importStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(map[string]string{
-		"id":         importEntry.ID.String(),
-		"status":     string(importEntry.Status),
-		"updated_at": importEntry.UpdatedAt.String(),
+	type FailedPathJson struct {
+		Path   string `json:"path"`
+		Reason string `json:"reason"`
+	}
+
+	failedPaths, err := paths.FailedPaths(a.db, importEntry.ID)
+	failedPathsJSON := make([]FailedPathJson, len(failedPaths))
+
+	for i, path := range failedPaths {
+		failedPathsJSON[i] = FailedPathJson{Path: path.Path, Reason: path.DiscardReason}
+	}
+
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":           importEntry.ID.String(),
+		"status":       string(importEntry.Status),
+		"failed_paths": failedPathsJSON,
+		"updated_at":   importEntry.UpdatedAt.String(),
 	}); err != nil {
 		errorf(w, http.StatusInternalServerError, "encode: %v", err)
 		return
