@@ -6,4 +6,7 @@ type EXIFMetadata struct {
 	MediaGroupUUID    string `json:"MediaGroupUUID"`
 	ImageUniqueID     string `json:"ImageUniqueID"`
 	ContentIdentifier string `json:"ContentIdentifier"`
+
+	Width  int `json:"ImageWidth"`
+	Height int `json:"ImageHeight"`
 }

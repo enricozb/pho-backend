@@ -20,6 +20,9 @@ type File struct {
 	InitHash  []byte        `gorm:"unique;not null"`
 	LiveID    []byte        `gorm:"not null"`
 
+	Width  int `gorm:"not null"`
+	Height int `gorm:"not null"`
+
 	Extension string `gorm:"default:NULL"`
 
 	Import jobs.Import

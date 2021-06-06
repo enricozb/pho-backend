@@ -85,6 +85,8 @@ func (w *exifWorker) getEXIFData(importID jobs.ImportID, filepaths []string) (ma
 		"-MediaGroupUUID",
 		"-ImageUniqueID",
 		"-ContentIdentifier",
+		"-ImageWidth",
+		"-ImageHeight",
 	)
 
 	data, err := cmd.Output()

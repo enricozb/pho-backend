@@ -41,7 +41,7 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 
 	filesToImport := make([]files.File, len(pathsToImport))
 	for i, path := range pathsToImport {
-		metadata, err := extractMetadata(path.EXIFMetadata)
+		metadata, err := validateMetadata(path.EXIFMetadata)
 		if err != nil {
 			return fmt.Errorf("extract metadata: %v", err)
 		}
@@ -52,6 +52,8 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 		filesToImport[i].Timestamp = metadata.timestamp
 		filesToImport[i].LiveID = metadata.liveID
 		filesToImport[i].InitHash = path.InitHash
+		filesToImport[i].Width = metadata.width
+		filesToImport[i].Height = metadata.height
 	}
 
 	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&filesToImport).Error; err != nil {
@@ -68,9 +70,13 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 type validatedEXIFMetadata struct {
 	timestamp time.Time
 	liveID    []byte
+	width     int
+	height    int
 }
 
-func extractMetadata(exif paths.EXIFMetadata) (validatedEXIFMetadata, error) {
+// validateMetadata checks for any missing EXIF data, setting defaults if necessary.
+// TODO(enricozb): consider moving this to the EXIF worker.
+func validateMetadata(exif paths.EXIFMetadata) (validatedEXIFMetadata, error) {
 	var err error
 
 	timestamp := time.Unix(exif.CreateDate, 0)
@@ -81,6 +87,10 @@ func extractMetadata(exif paths.EXIFMetadata) (validatedEXIFMetadata, error) {
 		}
 	}
 
+	if exif.Width == 0 || exif.Height == 0 {
+		return validatedEXIFMetadata{}, fmt.Errorf("unable to get width/height: %v", err)
+	}
+
 	liveID := exif.MediaGroupUUID
 	if liveID == "" {
 		liveID = exif.ContentIdentifier
@@ -89,6 +99,8 @@ func extractMetadata(exif paths.EXIFMetadata) (validatedEXIFMetadata, error) {
 	return validatedEXIFMetadata{
 		timestamp: timestamp,
 		liveID:    []byte(liveID),
+		width:     exif.Width,
+		height:    exif.Height,
 	}, nil
 }
 
