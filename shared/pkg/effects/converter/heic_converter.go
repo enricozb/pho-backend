@@ -10,7 +10,7 @@ type heicConverter struct {
 }
 
 func init() {
-	registerConverter("image/heic", newHEICConverter)
+	registerConverter("image/heic", "image/jpeg", newHEICConverter)
 }
 
 func newHEICConverter() converter {

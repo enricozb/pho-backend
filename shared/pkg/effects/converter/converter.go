@@ -5,6 +5,9 @@ import "fmt"
 // SupportedMimeTypes is the list of all mimetypes that can be converted.
 var SupportedMimeTypes []string
 
+// OutputMimeTypes is the set of output formats.
+var OutputMimeTypes map[string]struct{}
+
 // MediaConverter is the exported converter that can convert any mimetype in `SupportedMimeTypes`.
 type MediaConverter struct {
 	converters map[string]converter
@@ -24,13 +27,14 @@ type converter interface {
 var registeredConverters = make(map[string]func() converter)
 
 // registerConverter registers a converter for a specific mimetype.
-func registerConverter(mimetype string, c func() converter) {
-	if _, alreadyRegistered := registeredConverters[mimetype]; alreadyRegistered {
-		panic(fmt.Errorf("converter already exists for mimetype %s", mimetype))
+func registerConverter(inmime, outmime string, c func() converter) {
+	if _, alreadyRegistered := registeredConverters[inmime]; alreadyRegistered {
+		panic(fmt.Errorf("converter already exists for mimetype %s", inmime))
 	}
-	registeredConverters[mimetype] = c
+	registeredConverters[inmime] = c
 
-	SupportedMimeTypes = append(SupportedMimeTypes, mimetype)
+	SupportedMimeTypes = append(SupportedMimeTypes, inmime)
+	OutputMimeTypes[outmime] = struct{}{}
 }
 
 func NewMediaConverter() *MediaConverter {
