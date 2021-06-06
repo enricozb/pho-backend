@@ -27,8 +27,8 @@ type converter interface {
 
 var registeredConverters = make(map[string]func() converter)
 
-// registerConverter registers a converter for a specific mimetype.
-func registerConverter(inmime, outmime string, c func() converter) int {
+// registerConverter registers a converter for a specific mimetype. Returns an empty struct so package-level calls can be made.
+func registerConverter(inmime, outmime string, c func() converter) struct{} {
 	if _, alreadyRegistered := registeredConverters[inmime]; alreadyRegistered {
 		panic(fmt.Errorf("converter already exists for mimetype %s", inmime))
 	}
@@ -37,7 +37,7 @@ func registerConverter(inmime, outmime string, c func() converter) int {
 	SupportedMimeTypes = append(SupportedMimeTypes, inmime)
 	OutputMimeTypes[outmime] = struct{}{}
 
-	return 0
+	return struct{}{}
 }
 
 func NewMediaConverter() *MediaConverter {
