@@ -32,8 +32,12 @@ type Path struct {
 	Import   jobs.Import
 }
 
-func PathsInPipeline(db *gorm.DB, importID jobs.ImportID) (validPaths []Path, err error) {
-	return validPaths, db.Where("import_id = ? AND LENGTH(discard_reason) = 0", importID).Find(&validPaths).Error
+func PathsInPipeline(db *gorm.DB, importID jobs.ImportID) (paths []Path, err error) {
+	return paths, db.Where("import_id = ? AND LENGTH(discard_reason) = 0", importID).Find(&paths).Error
+}
+
+func FailedPaths(db *gorm.DB, importID jobs.ImportID) (paths []Path, err error) {
+	return paths, db.Where("import_id = ? AND LENGTH(discard_reason) != 0", importID).Find(&paths).Error
 }
 
 func (p *Path) BeforeSave(tx *gorm.DB) (err error) {

@@ -22,6 +22,7 @@ var MediaFixturesPath = filepath.Join(filepath.Dir(currentFile), ".media_fixture
 const (
 	NumFilesInFixture       int64 = 6
 	NumUniqueFilesInFixture int64 = 5
+	NumUnsupportedFiles     int64 = 2
 )
 
 func MockDB(t *testing.T) (mockDB *gorm.DB, cleanup func()) {

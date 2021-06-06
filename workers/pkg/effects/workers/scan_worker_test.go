@@ -26,6 +26,10 @@ func TestWorkers_ScanWorker(t *testing.T) {
 	assert.NoError(err)
 	assert.Len(pathsToCheck, int(testutil.NumFilesInFixture))
 
+	failedPaths, err := paths.FailedPaths(db, importEntry.ID)
+	assert.NoError(err)
+	assert.Len(failedPaths, int(testutil.NumUnsupportedFiles))
+
 	assertDidSetImportStatus(assert, db, importEntry.ID, jobs.ImportStatusScan)
 	assertDidEnqueueJob(assert, db, importEntry.ID, jobs.JobMetadata)
 }
