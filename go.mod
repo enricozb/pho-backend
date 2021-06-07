@@ -15,6 +15,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/pelletier/go-toml v1.9.1 // indirect
+	github.com/rs/cors v1.7.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
