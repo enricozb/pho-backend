@@ -35,8 +35,8 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 	}
 
 	var filesToImport []files.File
-	if err := w.db.Where("import_id = ? AND kind = ?", importEntry.ID, files.ImageKind).Find(&filesToImport).Error; err != nil {
-		return fmt.Errorf("get image files: %v", err)
+	if err := w.db.Where("import_id = ?", importEntry.ID).Find(&filesToImport).Error; err != nil {
+		return fmt.Errorf("get files: %v", err)
 	}
 
 	// convert the files
