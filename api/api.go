@@ -35,6 +35,7 @@ func (a *api) Run() error {
 
 	r.HandleFunc("/files/all", a.allFiles).Methods("GET")
 	r.PathPrefix("/files/data/").Handler(http.StripPrefix("/files/data/", http.FileServer(http.Dir(config.Config.MediaDir))))
+	r.PathPrefix("/files/thumb/").Handler(http.StripPrefix("/files/thumb/", http.FileServer(http.Dir(config.Config.ThumbDir))))
 
 	http.Handle("/", r)
 
