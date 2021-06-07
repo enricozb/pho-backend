@@ -129,11 +129,11 @@ func runDedupeWorker(t *testing.T, db *gorm.DB, dedupeJob jobs.Job) (convertJob 
 	return convertJob
 }
 
-func runConvertWorker(t *testing.T, db *gorm.DB, convertJob jobs.Job) (cleanupJob jobs.Job) {
+func runConvertWorker(t *testing.T, db *gorm.DB, convertJob jobs.Job) (thumbnailJob jobs.Job) {
 	assert := require.New(t)
 	assert.NoError(workers.NewConvertWorker(db).Work(convertJob))
 
-	assert.NoError(db.Where("import_id = ? AND kind = ?", convertJob.ImportID, jobs.JobCleanup).First(&cleanupJob).Error)
+	assert.NoError(db.Where("import_id = ? AND kind = ?", convertJob.ImportID, jobs.JobThumbnail).First(&thumbnailJob).Error)
 
-	return cleanupJob
+	return thumbnailJob
 }

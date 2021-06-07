@@ -9,6 +9,7 @@ const (
 	ImportStatusMetadata   ImportStatus = "METADATA"
 	ImportStatusDedupe     ImportStatus = "DEDUPE"
 	ImportStatusConvert    ImportStatus = "CONVERT"
+	ImportStatusThumbnail  ImportStatus = "THUMBNAIL"
 	ImportStatusCleanup    ImportStatus = "CLEANUP"
 	ImportStatusDone       ImportStatus = "DONE"
 	ImportStatusFailed     ImportStatus = "FAILED"

@@ -5,53 +5,58 @@ import (
 	"fmt"
 
 	"github.com/enricozb/pho/shared/pkg/effects/converter"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 )
 
-// SupportedMimeTypes is the list of all mimetypes that can be converted.
-var SupportedMimeTypes []string
+const ThumbnailSuffix string = ".JPG"
+
+// The set of supported input mimetypes.
+var SupportedMimeTypes = make(map[string]struct{})
 
 // ThumbnailGenerator can make thumbnails for any mimetype in `SupportedMimeTypes`.
 type ThumbnailGenerator struct {
-	generators map[string]thumbnailGenerator
+	generators map[files.FileKind]thumbnailGenerator
 }
 
 // thumbnailGenerator describes the behavior of all thumbnail generators (HEIC, quicktime, etc).
 type thumbnailGenerator interface {
 	// Thumbnail creates a thumbnail of `src` in `dst`, potentially non-blocking.
-	// `dst` should not have any extensions, they will be added by the generator and returned.
-	Thumbnail(src, dst string) (string, error)
+	// The extension of `dst` must be `ThumbnailSuffix`.
+	Thumbnail(src, dst string) error
 
 	// Complete any remaining thumbnail generation tasks, blocking until all are done.
 	Finish() error
 }
 
-var registeredGenerators = make(map[string]func() thumbnailGenerator)
+var registeredThumbnailGenerators = make(map[files.FileKind]func() thumbnailGenerator)
 
-// registerThumbnailer registers a thumbnail generator for a specific mimetype.
-func registerThumbnailer(mimetype string, c func() thumbnailGenerator) struct{} {
-	if _, alreadyRegistered := registeredGenerators[mimetype]; alreadyRegistered {
-		panic(fmt.Errorf("converter already exists for mimetype %s", mimetype))
+// registerThumbnailGenerator registers a thumbnail generator for a specific file kind and the mimetypes it supports.
+func registerThumbnailGenerator(kind files.FileKind, mimetypes []string, t func() thumbnailGenerator) struct{} {
+	for _, mimetype := range mimetypes {
+		if _, alreadyRegistered := SupportedMimeTypes[mimetype]; alreadyRegistered {
+			panic(fmt.Errorf("thumbnail generator already exists for mimetype %s", mimetype))
+		}
+		SupportedMimeTypes[mimetype] = struct{}{}
 	}
-	registeredGenerators[mimetype] = c
 
-	SupportedMimeTypes = append(SupportedMimeTypes, mimetype)
+	registeredThumbnailGenerators[kind] = t
 
 	return struct{}{}
 }
 
 func NewThumbnailGenerator() *ThumbnailGenerator {
-	m := &ThumbnailGenerator{generators: make(map[string]thumbnailGenerator)}
-	for mimetype, c := range registeredGenerators {
-		m.generators[mimetype] = c()
+	m := &ThumbnailGenerator{generators: make(map[files.FileKind]thumbnailGenerator)}
+	for kind, c := range registeredThumbnailGenerators {
+		m.generators[kind] = c()
 	}
 
 	return m
 }
 
-func (t *ThumbnailGenerator) Thumbnail(src, dst, srcMimeType string) (string, error) {
-	g, exists := t.generators[srcMimeType]
+func (t *ThumbnailGenerator) Thumbnail(src, dst string, kind files.FileKind) error {
+	g, exists := t.generators[kind]
 	if !exists {
-		return "", fmt.Errorf("mimetype not supported: %s", srcMimeType)
+		return fmt.Errorf("kind not supported: %s", kind)
 	}
 
 	return g.Thumbnail(src, dst)
@@ -68,14 +73,8 @@ func (t *ThumbnailGenerator) Finish() error {
 }
 
 func init() {
-	thumbnailInputMimeTypes := map[string]struct{}{}
-
-	for _, mimetype := range SupportedMimeTypes {
-		thumbnailInputMimeTypes[mimetype] = struct{}{}
-	}
-
 	for mimetype := range converter.OutputMimeTypes {
-		if _, exists := thumbnailInputMimeTypes[mimetype]; !exists {
+		if _, exists := SupportedMimeTypes[mimetype]; !exists {
 			panic(fmt.Errorf("converter outputs mimetype '%s', which is not supported by the thumbnail generator", mimetype))
 		}
 	}

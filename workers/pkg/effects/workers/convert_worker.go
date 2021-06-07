@@ -49,7 +49,7 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 		}
 
 		src := path.Path
-		dst := destPath(file)
+		dst := convertDestPath(file)
 		dst, err := converter.Convert(src, dst, path.Mimetype)
 		if err != nil {
 			return fmt.Errorf("convert: %v", err)
@@ -64,14 +64,14 @@ func (w *ConvertWorker) Work(job jobs.Job) error {
 		return fmt.Errorf("finish: %v", err)
 	}
 
-	if _, err := jobs.PushJobWithArgs(w.db, importEntry.ID, jobs.JobCleanup, CleanupWorkerArgs{Full: false}); err != nil {
+	if _, err := jobs.PushJob(w.db, importEntry.ID, jobs.JobThumbnail); err != nil {
 		return fmt.Errorf("push job: %v", err)
 	}
 
 	return nil
 }
 
-// destPath returns the destination path after conversion for a file, _without the new extension_.
-func destPath(file files.File) string {
+// convertDestPath returns the destination path after conversion for a file, _without the new extension_.
+func convertDestPath(file files.File) string {
 	return filepath.Join(config.Config.MediaDir, file.ID.String())
 }

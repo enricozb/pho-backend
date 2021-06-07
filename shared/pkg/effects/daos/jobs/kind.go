@@ -10,6 +10,7 @@ const (
 	JobMetadataMonitor JobKind = "METADATA_MONITOR"
 	JobDedupe          JobKind = "DEDUPE"
 	JobConvert         JobKind = "CONVERT"
+	JobThumbnail       JobKind = "THUMBNAIL"
 	JobCleanup         JobKind = "CLEANUP"
 )
 

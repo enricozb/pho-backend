@@ -1,6 +1,7 @@
 package thumbnail
 
 import (
+	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 	"github.com/enricozb/pho/shared/pkg/effects/jpeg"
 	"github.com/enricozb/pho/shared/pkg/lib/pool"
 )
@@ -11,19 +12,17 @@ type imageThumbnailGenerator struct {
 }
 
 var (
-	_ = registerThumbnailer("image/jpeg", newImageThumbnailGenerator)
-	_ = registerThumbnailer("image/png", newImageThumbnailGenerator)
+	_ = registerThumbnailGenerator(files.ImageKind, []string{"image/jpeg", "image/png"}, newImageThumbnailGenerator)
 )
 
 func newImageThumbnailGenerator() thumbnailGenerator {
 	return &imageThumbnailGenerator{pool.NewPool(32)}
 }
 
-func (c *imageThumbnailGenerator) Thumbnail(src, dst string) (string, error) {
-	dst = dst + ".JPG"
+func (c *imageThumbnailGenerator) Thumbnail(src, dst string) error {
 	c.p.Go(func() error { return jpeg.Thumbnail(src, dst) })
 
-	return dst, nil
+	return nil
 }
 
 func (c *imageThumbnailGenerator) Finish() error {

@@ -57,6 +57,7 @@ func buildWorkers(db *gorm.DB) map[jobs.JobKind]worker.Worker {
 		jobs.JobMetadataMonitor: workers.NewMonitorWorker(db, jobs.JobDedupe),
 		jobs.JobDedupe:          workers.NewDedupeWorker(db),
 		jobs.JobConvert:         workers.NewConvertWorker(db),
+		jobs.JobThumbnail:       workers.NewThumbnailWorker(db),
 		jobs.JobCleanup:         workers.NewCleanupWorker(db),
 	}
 }
