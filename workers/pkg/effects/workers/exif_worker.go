@@ -80,6 +80,7 @@ func (w *exifWorker) getEXIFData(importID jobs.ImportID, filepaths []string) (ma
 		"exiftool",
 		"-@", tmp.Name(),
 		"-json",
+
 		// desired exif metadata
 		"-CreateDate", "-DateFormat", "%s",
 		"-MediaGroupUUID",
@@ -87,6 +88,7 @@ func (w *exifWorker) getEXIFData(importID jobs.ImportID, filepaths []string) (ma
 		"-ContentIdentifier",
 		"-ImageWidth",
 		"-ImageHeight",
+		"-Orientation#",
 	)
 
 	data, err := cmd.Output()
@@ -101,6 +103,11 @@ func (w *exifWorker) getEXIFData(importID jobs.ImportID, filepaths []string) (ma
 
 	exifMap := map[string]paths.EXIFMetadata{}
 	for _, exif := range exifMetadatas {
+		// need to flip the width and height if depending on orientation metadata
+		// see: https://sirv.com/help/articles/rotate-photos-to-be-upright/
+		if exif.Orientation >= 5 {
+			exif.Width, exif.Height = exif.Height, exif.Width
+		}
 		exifMap[exif.Path] = exif
 	}
 
