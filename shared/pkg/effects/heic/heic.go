@@ -12,5 +12,12 @@ func Convert(src, dst string) error {
 		return fmt.Errorf("heif-convert (%s -> %s): %v\nstderr: %s", src, dst, err, output)
 	}
 
+	// heif-convert images need to have their output orientations set to 1
+	// see: https://github.com/enricozb/pho-backend/issues/3
+	output, err = exec.Command("exiftool", dst, "-orientation#=1").Output()
+	if err != nil {
+		return fmt.Errorf("exiftool %s -orientation#=1: %v\nstderr: %s", dst, err, output)
+	}
+
 	return nil
 }
