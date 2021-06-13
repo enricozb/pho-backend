@@ -21,7 +21,7 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 		filesJSON[i] = map[string]interface{}{
 			"id":   file.ID.String(),
 			"kind": string(file.Kind),
-			"time": file.Timestamp.UTC().String(),
+			"time": file.Timestamp.String(),
 			"live": string(file.LiveID),
 			"dimensions": map[string]int{
 				"width":  file.Width,
