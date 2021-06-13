@@ -16,9 +16,10 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filesJSON := make(map[string]interface{})
-	for _, file := range files {
-		filesJSON[file.ID.String()] = map[string]interface{}{
+	filesJSON := make([]map[string]interface{}, len(files))
+	for i, file := range files {
+		filesJSON[i] = map[string]interface{}{
+			"id":   file.ID.String(),
 			"kind": string(file.Kind),
 			"time": file.Timestamp.UTC().String(),
 			"live": string(file.LiveID),
