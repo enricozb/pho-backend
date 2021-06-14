@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"github.com/enricozb/pho/shared/pkg/effects/daos/exif"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 )
@@ -17,8 +18,8 @@ type Path struct {
 	Path string `gorm:"unique; not null"`
 
 	// auto-unmarshall into EXIFMetadata from EXIFMetadataJSON when fetching
-	EXIFMetadata     EXIFMetadata `gorm:"-"`
-	EXIFMetadataJSON []byte       `gorm:"column:exif_metadata"`
+	EXIFMetadata     exif.EXIFMetadata `gorm:"-"`
+	EXIFMetadataJSON []byte            `gorm:"column:exif_metadata"`
 
 	// non-exif metadata
 	Kind     files.FileKind

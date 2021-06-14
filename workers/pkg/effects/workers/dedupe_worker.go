@@ -2,8 +2,6 @@ package workers
 
 import (
 	"fmt"
-	"os"
-	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -41,19 +39,14 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 
 	filesToImport := make([]files.File, len(pathsToImport))
 	for i, path := range pathsToImport {
-		metadata, err := validateMetadata(path.EXIFMetadata)
-		if err != nil {
-			return fmt.Errorf("extract metadata: %v", err)
-		}
-
 		filesToImport[i].ID = path.ID
 		filesToImport[i].ImportID = path.ImportID
 		filesToImport[i].Kind = path.Kind
-		filesToImport[i].Timestamp = metadata.timestamp
-		filesToImport[i].LiveID = metadata.liveID
+		filesToImport[i].Timestamp = path.EXIFMetadata.Timestamp
+		filesToImport[i].LiveID = path.EXIFMetadata.LiveID
 		filesToImport[i].InitHash = path.InitHash
-		filesToImport[i].Width = metadata.width
-		filesToImport[i].Height = metadata.height
+		filesToImport[i].Width = path.EXIFMetadata.Width
+		filesToImport[i].Height = path.EXIFMetadata.Height
 	}
 
 	if err := w.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&filesToImport).Error; err != nil {
@@ -65,50 +58,4 @@ func (w *dedupeWorker) Work(job jobs.Job) error {
 	}
 
 	return nil
-}
-
-type validatedEXIFMetadata struct {
-	timestamp time.Time
-	liveID    []byte
-	width     int
-	height    int
-}
-
-// validateMetadata checks for any missing EXIF data, setting defaults if necessary.
-// TODO(enricozb): consider moving this to the EXIF worker.
-func validateMetadata(exif paths.EXIFMetadata) (validatedEXIFMetadata, error) {
-	var err error
-
-	timestamp := time.Unix(exif.CreateDate, 0)
-	if exif.CreateDate == 0 {
-		timestamp, err = fallbackCreateDate(exif.Path)
-		if err != nil {
-			return validatedEXIFMetadata{}, fmt.Errorf("fallback create date: %v", err)
-		}
-	}
-
-	if exif.Width == 0 || exif.Height == 0 {
-		return validatedEXIFMetadata{}, fmt.Errorf("unable to get width/height: %v", err)
-	}
-
-	liveID := exif.MediaGroupUUID
-	if liveID == "" {
-		liveID = exif.ContentIdentifier
-	}
-
-	return validatedEXIFMetadata{
-		timestamp: timestamp,
-		liveID:    []byte(liveID),
-		width:     exif.Width,
-		height:    exif.Height,
-	}, nil
-}
-
-func fallbackCreateDate(path string) (time.Time, error) {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("stat: %v", err)
-	}
-
-	return fi.ModTime(), nil
 }

@@ -3,6 +3,7 @@ package workers_test
 import (
 	"testing"
 
+	"github.com/enricozb/pho/shared/pkg/effects/daos/exif"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/paths"
 	"github.com/enricozb/pho/shared/pkg/lib/testutil"
@@ -23,7 +24,7 @@ func TestWorkers_EXIFWorker(t *testing.T) {
 
 	// check that exif metadata is empty for valid paths
 	for _, path := range pathsToCheck {
-		assert.Equal(paths.EXIFMetadata{}, path.EXIFMetadata)
+		assert.Equal(exif.EXIFMetadata{}, path.EXIFMetadata)
 	}
 
 	assert.NoError(workers.NewEXIFWorker(db).Work(exifJob))
@@ -34,6 +35,6 @@ func TestWorkers_EXIFWorker(t *testing.T) {
 
 	// check that exif metadata is not empty for valid paths
 	for _, path := range pathsToCheck {
-		assert.NotEqual(path.EXIFMetadata, paths.EXIFMetadata{})
+		assert.NotEqual(path.EXIFMetadata, exif.EXIFMetadata{})
 	}
 }

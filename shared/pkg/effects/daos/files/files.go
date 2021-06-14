@@ -2,26 +2,23 @@ package files
 
 import (
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"github.com/enricozb/pho/shared/pkg/effects/daos/exif"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/jobs"
 )
 
 type FileID = uuid.UUID
 
 type File struct {
-	ID        FileID
-	ImportID  jobs.ImportID `gorm:"not null"`
-	Kind      FileKind      `gorm:"not null"`
-	Timestamp time.Time     `gorm:"not null"`
-	InitHash  []byte        `gorm:"unique;not null"`
-	LiveID    []byte        `gorm:"not null"`
+	ID       FileID
+	ImportID jobs.ImportID `gorm:"not null"`
+	Kind     FileKind      `gorm:"not null"`
+	InitHash []byte        `gorm:"unique;not null"`
 
-	Width  int `gorm:"not null"`
-	Height int `gorm:"not null"`
+	exif.EXIFMetadata
 
 	Extension string `gorm:"default:NULL"`
 
