@@ -16,9 +16,11 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filesJSON := make([]map[string]interface{}, len(files))
-	for i, file := range files {
-		filesJSON[i] = map[string]interface{}{
+	filesJSON := make(map[string][]interface{})
+
+	for _, file := range files {
+		date := file.Timestamp[:10]
+		filesJSON[date] = append(filesJSON[date], map[string]interface{}{
 			"id":   file.ID.String(),
 			"kind": string(file.Kind),
 			"time": file.Timestamp,
@@ -31,7 +33,7 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 				"data":  fmt.Sprintf("/files/data/%s%s", file.ID.String(), file.Extension),
 				"thumb": fmt.Sprintf("/files/thumb/%s", file.ID.String()),
 			},
-		}
+		})
 	}
 
 	if err := json.NewEncoder(w).Encode(filesJSON); err != nil {
