@@ -35,13 +35,13 @@ func (a *api) allAlbums(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type NewAlbumBody struct {
+type UpdateAlbumBody struct {
 	Name  string   `json:"name"`
 	Files []string `json:"files"`
 }
 
 func (a *api) newAlbum(w http.ResponseWriter, r *http.Request) {
-	var albumBody NewAlbumBody
+	var albumBody UpdateAlbumBody
 
 	if err := json.NewDecoder(r.Body).Decode(&albumBody); err != nil {
 		errorf(w, http.StatusBadRequest, "decode json: %v", err)
@@ -113,5 +113,43 @@ func (a *api) albumData(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(albumJSON); err != nil {
 		errorf(w, http.StatusBadRequest, "encode: %v", err)
 		return
+	}
+}
+
+func (a *api) updateAlbum(w http.ResponseWriter, r *http.Request) {
+	var albumBody UpdateAlbumBody
+	if err := json.NewDecoder(r.Body).Decode(&albumBody); err != nil {
+		errorf(w, http.StatusBadRequest, "decode json: %v", err)
+		return
+	}
+
+	albumID, err := uuid.Parse(mux.Vars(r)["id"])
+	if err != nil {
+		errorf(w, http.StatusBadRequest, "malformed album id: %v", err)
+		return
+	}
+	album := albums.Album{ID: albumID}
+
+	// rename
+	if len(albumBody.Name) > 0 {
+		if err := a.db.Debug().Model(&album).Update("name", albumBody.Name).Error; err != nil {
+			errorf(w, http.StatusBadRequest, "save album: %v", err)
+			return
+		}
+	}
+
+	// add files
+	// TODO(enricozb) handle removing files
+	if len(albumBody.Files) == 0 {
+		files := []files.File{}
+		if err := a.db.Debug().Find(&files, albumBody.Files).Error; err != nil {
+			errorf(w, http.StatusBadRequest, "bad file id: %v", err)
+			return
+		}
+
+		if err := a.db.Model(&album).Association("Files").Append(files); err != nil {
+			errorf(w, http.StatusBadRequest, "append files: %v", err)
+			return
+		}
 	}
 }

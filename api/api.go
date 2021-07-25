@@ -40,6 +40,7 @@ func (a *api) Run() error {
 	r.HandleFunc("/albums", a.allAlbums).Methods("GET")
 	r.HandleFunc("/albums", a.newAlbum).Methods("POST")
 	r.HandleFunc("/albums/{id:[-0-9a-f]+}", a.albumData).Methods("GET")
+	r.HandleFunc("/albums/{id:[-0-9a-f]+}", a.updateAlbum).Methods("POST")
 	r.HandleFunc("/albums/{id:[-0-9a-f]+}/cover", a.albumCover).Methods("GET")
 
 	http.Handle("/", r)
