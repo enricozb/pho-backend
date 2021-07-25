@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/albums"
+	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
 )
 
 func (a *api) allAlbums(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +32,8 @@ func (a *api) allAlbums(w http.ResponseWriter, r *http.Request) {
 }
 
 type NewAlbumBody struct {
-	Name string `json:"name"`
+	Name  string   `json:"name"`
+	Files []string `json:"files"`
 }
 
 func (a *api) newAlbum(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +44,20 @@ func (a *api) newAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.db.Create(&albums.Album{Name: albumBody.Name}); err != nil {
+	files := []files.File{}
+	if err := a.db.Find(&files, albumBody.Files).Error; err != nil {
+		errorf(w, http.StatusBadRequest, "bad file id: %v", err)
+		return
+	}
+
+	album := albums.Album{Name: albumBody.Name, Files: files}
+	if err := a.db.Create(&album).Error; err != nil {
 		errorf(w, http.StatusBadRequest, "new album: %v", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"id": album.ID.String()}); err != nil {
+		errorf(w, http.StatusInternalServerError, "encode: %v", err)
 		return
 	}
 }
