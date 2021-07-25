@@ -89,3 +89,29 @@ func (a *api) albumCover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (a *api) albumData(w http.ResponseWriter, r *http.Request) {
+	albumID, err := uuid.Parse(mux.Vars(r)["id"])
+	if err != nil {
+		errorf(w, http.StatusBadRequest, "malformed album id: %v", err)
+		return
+	}
+
+	album := albums.Album{ID: albumID}
+	if err := a.db.Preload("Files").First(&album).Error; err != nil {
+		errorf(w, http.StatusBadRequest, "get album: %v", err)
+		return
+	}
+
+	albumJSON := map[string]interface{}{
+		"id":    albumID.String(),
+		"name":  album.Name,
+		"files": a.filesJSON(album.Files),
+		// TODO(enricozb) add parent and children
+	}
+
+	if err := json.NewEncoder(w).Encode(albumJSON); err != nil {
+		errorf(w, http.StatusBadRequest, "encode: %v", err)
+		return
+	}
+}

@@ -16,8 +16,14 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filesJSON := make(map[string][]interface{})
+	if err := json.NewEncoder(w).Encode(a.filesJSON(files)); err != nil {
+		errorf(w, http.StatusInternalServerError, "encode: %v", err)
+		return
+	}
+}
 
+func (a *api) filesJSON(files []files.File) map[string][]interface{} {
+	filesJSON := make(map[string][]interface{})
 	for _, file := range files {
 		date := file.Timestamp[:10]
 		filesJSON[date] = append(filesJSON[date], map[string]interface{}{
@@ -36,8 +42,5 @@ func (a *api) allFiles(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if err := json.NewEncoder(w).Encode(filesJSON); err != nil {
-		errorf(w, http.StatusInternalServerError, "encode: %v", err)
-		return
-	}
+	return filesJSON
 }
