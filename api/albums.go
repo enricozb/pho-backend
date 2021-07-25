@@ -2,7 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 
 	"github.com/enricozb/pho/shared/pkg/effects/daos/albums"
 	"github.com/enricozb/pho/shared/pkg/effects/daos/files"
@@ -58,6 +62,30 @@ func (a *api) newAlbum(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(map[string]string{"id": album.ID.String()}); err != nil {
 		errorf(w, http.StatusInternalServerError, "encode: %v", err)
+		return
+	}
+}
+
+func (a *api) albumCover(w http.ResponseWriter, r *http.Request) {
+	albumID, err := uuid.Parse(mux.Vars(r)["id"])
+	if err != nil {
+		errorf(w, http.StatusBadRequest, "malformed album id: %v", err)
+		return
+	}
+
+	album := albums.Album{ID: albumID}
+	if err := a.db.Preload("Files").First(&album).Error; err != nil {
+		errorf(w, http.StatusBadRequest, "get album: %v", err)
+		return
+	}
+
+	coverJSON := map[string]string{}
+	if len(album.Files) > 0 {
+		coverJSON["cover"] = fmt.Sprintf("/files/thumb/%s", album.Files[0].ID.String())
+	}
+
+	if err := json.NewEncoder(w).Encode(coverJSON); err != nil {
+		errorf(w, http.StatusBadRequest, "encode: %v", err)
 		return
 	}
 }
