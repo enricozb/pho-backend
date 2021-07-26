@@ -132,7 +132,7 @@ func (a *api) updateAlbum(w http.ResponseWriter, r *http.Request) {
 
 	// rename
 	if len(albumBody.Name) > 0 {
-		if err := a.db.Debug().Model(&album).Update("name", albumBody.Name).Error; err != nil {
+		if err := a.db.Model(&album).Update("name", albumBody.Name).Error; err != nil {
 			errorf(w, http.StatusBadRequest, "save album: %v", err)
 			return
 		}
@@ -142,7 +142,7 @@ func (a *api) updateAlbum(w http.ResponseWriter, r *http.Request) {
 	// TODO(enricozb) handle removing files
 	if len(albumBody.Files) == 0 {
 		files := []files.File{}
-		if err := a.db.Debug().Find(&files, albumBody.Files).Error; err != nil {
+		if err := a.db.Find(&files, albumBody.Files).Error; err != nil {
 			errorf(w, http.StatusBadRequest, "bad file id: %v", err)
 			return
 		}
